@@ -62,16 +62,16 @@ enum ActionType: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .none: "No Action"
-        case .keyboardShortcut: "Send Keyboard Shortcut"
-        case .typeText: "Type Text"
-        case .launchApp: "Launch / Activate Application"
-        case .openURL: "Open URL"
-        case .runShell: "Run Shell Script"
-        case .runAppleScript: "Run AppleScript"
-        case .window: "Window Management"
-        case .system: "System Action"
-        case .showWindowSwitcher: "Show Window Switcher"
+        case .none: L("No Action")
+        case .keyboardShortcut: L("Send Keyboard Shortcut")
+        case .typeText: L("Type Text")
+        case .launchApp: L("Launch / Activate Application")
+        case .openURL: L("Open URL")
+        case .runShell: L("Run Shell Script")
+        case .runAppleScript: L("Run AppleScript")
+        case .window: L("Window Management")
+        case .system: L("System Action")
+        case .showWindowSwitcher: L("Show Window Switcher")
         }
     }
     init(_ a: Action) {
@@ -207,7 +207,7 @@ struct CycleStepsEditor: View {
                         if !store.config.snapAreas.isEmpty {
                             Divider()
                             ForEach(store.config.snapAreas) { a in
-                                Text("“\(a.name)” \(a.target == nil ? "area frame" : "window frame") · \(a.displayName)").tag(WindowTarget.area(a.id))
+                                Text("“\(a.name)” \(a.target == nil ? L("area frame") : L("window frame")) · \(a.displayName)").tag(WindowTarget.area(a.id))
                             }
                         }
                     }
@@ -260,7 +260,7 @@ struct ScriptEditor: View {
     @Binding var text: String
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(L(title)).font(.caption).foregroundStyle(.secondary)
             TextEditor(text: $text)
                 .font(.system(.body, design: .monospaced))
                 .frame(minHeight: 120)

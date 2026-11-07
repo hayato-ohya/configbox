@@ -78,16 +78,16 @@ enum GestureKind: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .tap: "Tap"
-        case .swipeUp: "Swipe Up"
-        case .swipeDown: "Swipe Down"
-        case .swipeLeft: "Swipe Left"
-        case .swipeRight: "Swipe Right"
+        case .tap: L("Tap")
+        case .swipeUp: L("Swipe Up")
+        case .swipeDown: L("Swipe Down")
+        case .swipeLeft: L("Swipe Left")
+        case .swipeRight: L("Swipe Right")
         }
     }
     var symbol: String {
         switch self {
-        case .tap: "hand.tap"
+        case .tap: L("hand.tap")
         case .swipeUp: "arrow.up"
         case .swipeDown: "arrow.down"
         case .swipeLeft: "arrow.left"
@@ -99,7 +99,7 @@ enum GestureKind: String, Codable, CaseIterable, Identifiable {
 struct Gesture: Codable, Hashable {
     var fingers: Int
     var kind: GestureKind
-    var display: String { "\(fingers) Finger \(kind.title)" }
+    var display: String { L("%lld Finger %@", fingers, kind.title) }
 }
 
 // MARK: - Mouse
@@ -109,10 +109,10 @@ enum MouseButton: Int, Codable, CaseIterable, Identifiable {
     var id: Int { rawValue }
     var title: String {
         switch self {
-        case .left: "Left"
-        case .right: "Right"
-        case .middle: "Middle"
-        default: "Button \(rawValue + 1)"
+        case .left: L("Left")
+        case .right: L("Right")
+        case .middle: L("Middle")
+        default: L("Button %lld", rawValue + 1)
         }
     }
     /// Left and right *clicks* are only usable as triggers together with a modifier
@@ -123,7 +123,7 @@ enum MouseButton: Int, Codable, CaseIterable, Identifiable {
 enum Direction: String, Codable, CaseIterable, Identifiable {
     case up, down, left, right
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String { L(rawValue.capitalized) }
     var symbol: String { "arrow.\(rawValue)" }
 }
 
@@ -135,11 +135,11 @@ enum MouseTrigger: Codable, Hashable {
     var display: String {
         switch self {
         case .click(let b, let m, let c):
-            (m.symbols.isEmpty ? "" : m.symbols + " ") + (c >= 2 ? "Double " : "") + "\(b.title) Click"
+            (m.symbols.isEmpty ? "" : m.symbols + " ") + L(c >= 2 ? "Double %@ Click" : "%@ Click", b.title)
         case .scroll(let d, let m):
-            (m.symbols.isEmpty ? "" : m.symbols + " ") + "Scroll \(d.title)"
+            (m.symbols.isEmpty ? "" : m.symbols + " ") + L("Scroll %@", d.title)
         case .gesture(let b, let d, let m):
-            (m.symbols.isEmpty ? "" : m.symbols + " ") + "\(b.title) Button + Move \(d.title)"
+            (m.symbols.isEmpty ? "" : m.symbols + " ") + L("%@ Button + Move %@", b.title, d.title)
         }
     }
     var symbol: String {
@@ -191,24 +191,24 @@ enum WindowAction: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .leftHalf: "Left Half"
-        case .rightHalf: "Right Half"
-        case .topHalf: "Top Half"
-        case .bottomHalf: "Bottom Half"
-        case .topLeft: "Top Left Quarter"
-        case .topRight: "Top Right Quarter"
-        case .bottomLeft: "Bottom Left Quarter"
-        case .bottomRight: "Bottom Right Quarter"
-        case .leftThird: "Left Third"
-        case .centerThird: "Center Third"
-        case .rightThird: "Right Third"
-        case .leftTwoThirds: "Left Two Thirds"
-        case .rightTwoThirds: "Right Two Thirds"
-        case .maximize: "Maximize"
-        case .almostMaximize: "Almost Maximize"
-        case .center: "Center"
-        case .nextDisplay: "Move to Next Display"
-        case .previousDisplay: "Move to Previous Display"
+        case .leftHalf: L("Left Half")
+        case .rightHalf: L("Right Half")
+        case .topHalf: L("Top Half")
+        case .bottomHalf: L("Bottom Half")
+        case .topLeft: L("Top Left Quarter")
+        case .topRight: L("Top Right Quarter")
+        case .bottomLeft: L("Bottom Left Quarter")
+        case .bottomRight: L("Bottom Right Quarter")
+        case .leftThird: L("Left Third")
+        case .centerThird: L("Center Third")
+        case .rightThird: L("Right Third")
+        case .leftTwoThirds: L("Left Two Thirds")
+        case .rightTwoThirds: L("Right Two Thirds")
+        case .maximize: L("Maximize")
+        case .almostMaximize: L("Almost Maximize")
+        case .center: L("Center")
+        case .nextDisplay: L("Move to Next Display")
+        case .previousDisplay: L("Move to Previous Display")
         }
     }
 }
@@ -227,31 +227,31 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .missionControl: "Mission Control"
-        case .applicationWindows: "Application Windows (App Exposé)"
-        case .showDesktop: "Show Desktop"
-        case .launchpad: "Launchpad (Apps)"
-        case .moveSpaceLeft: "Move Left a Space"
-        case .moveSpaceRight: "Move Right a Space"
-        case .lockScreen: "Lock Screen"
-        case .sleepDisplay: "Sleep Display"
-        case .volumeUp: "Volume Up"
-        case .volumeDown: "Volume Down"
-        case .mute: "Mute"
-        case .brightnessUp: "Brightness Up"
-        case .brightnessDown: "Brightness Down"
-        case .playPause: "Play / Pause"
-        case .nextTrack: "Next Track"
-        case .previousTrack: "Previous Track"
-        case .middleClick: "Middle Click"
-        case .mouseBack: "Mouse Back (Button 4)"
-        case .mouseForward: "Mouse Forward (Button 5)"
-        case .hideFrontApp: "Hide Frontmost App"
-        case .quitFrontApp: "Quit Frontmost App"
-        case .closeWindow: "Close Window"
-        case .minimizeWindow: "Minimize Window"
-        case .zoomWindow: "Zoom Window"
-        case .toggleDarkMode: "Toggle Dark Mode"
+        case .missionControl: L("Mission Control")
+        case .applicationWindows: L("Application Windows (App Exposé)")
+        case .showDesktop: L("Show Desktop")
+        case .launchpad: L("Launchpad (Apps)")
+        case .moveSpaceLeft: L("Move Left a Space")
+        case .moveSpaceRight: L("Move Right a Space")
+        case .lockScreen: L("Lock Screen")
+        case .sleepDisplay: L("Sleep Display")
+        case .volumeUp: L("Volume Up")
+        case .volumeDown: L("Volume Down")
+        case .mute: L("Mute")
+        case .brightnessUp: L("Brightness Up")
+        case .brightnessDown: L("Brightness Down")
+        case .playPause: L("Play / Pause")
+        case .nextTrack: L("Next Track")
+        case .previousTrack: L("Previous Track")
+        case .middleClick: L("Middle Click")
+        case .mouseBack: L("Mouse Back (Button 4)")
+        case .mouseForward: L("Mouse Forward (Button 5)")
+        case .hideFrontApp: L("Hide Frontmost App")
+        case .quitFrontApp: L("Quit Frontmost App")
+        case .closeWindow: L("Close Window")
+        case .minimizeWindow: L("Minimize Window")
+        case .zoomWindow: L("Zoom Window")
+        case .toggleDarkMode: L("Toggle Dark Mode")
         }
     }
     var repeatsWhileHeld: Bool {
@@ -278,18 +278,18 @@ enum Action: Codable, Hashable {
 
     var display: String {
         switch self {
-        case .none: "No Action"
-        case .keyboardShortcut(let k): "Send \(k.display)"
-        case .launchApp(let s): "Launch \(AppRef.displayName(for: s))"
-        case .openURL(let s): "Open \(s)"
-        case .runShell(let s): "Shell: \(s.prefix(40))"
+        case .none: L("No Action")
+        case .keyboardShortcut(let k): L("Send %@", k.display)
+        case .launchApp(let s): L("Launch %@", AppRef.displayName(for: s))
+        case .openURL(let s): L("Open %@", s)
+        case .runShell(let s): L("Shell: %@", String(s.prefix(40)))
         case .runAppleScript: "AppleScript"
-        case .typeText(let t): "Type “\(t.prefix(24))\(t.count > 24 ? "…" : "")”"
+        case .typeText(let t): L("Type “%@”", String(t.prefix(24)) + (t.count > 24 ? "…" : ""))
         case .window(let w): w.title
-        case .snapAreaFrame(let id): "Window frame of “\(ConfigStore.shared.config.snapAreas.first { $0.id == id }?.name ?? "deleted snap area")”"
-        case .windowCycle(let steps): "Cycle: " + steps.map { $0.shortTitle }.joined(separator: " → ")
+        case .snapAreaFrame(let id): L("Window frame of “%@”", ConfigStore.shared.config.snapAreas.first { $0.id == id }?.name ?? L("deleted snap area"))
+        case .windowCycle(let steps): L("Cycle: ") + steps.map { $0.shortTitle }.joined(separator: " → ")
         case .system(let s): s.title
-        case .showWindowSwitcher: "Show Window Switcher"
+        case .showWindowSwitcher: L("Show Window Switcher")
         }
     }
     var symbol: String {
@@ -317,7 +317,7 @@ enum WindowTarget: Codable, Hashable {
     var shortTitle: String {
         switch self {
         case .tile(let w): w.title
-        case .area(let id): "“\(ConfigStore.shared.config.snapAreas.first { $0.id == id }?.name ?? "deleted area")”"
+        case .area(let id): "“\(ConfigStore.shared.config.snapAreas.first { $0.id == id }?.name ?? L("deleted area"))”"
         }
     }
 }
@@ -353,7 +353,7 @@ struct SimpleModification: Codable, Identifiable, Hashable {
 struct ComplexRule: Codable, Identifiable, Hashable {
     var id = UUID()
     var enabled = true
-    var name = "Mod-Tap key"
+    var name = L("Mod-Tap key")
     var from: UInt16                    // source key
     var aloneKey: KeyCombo?             // sent when tapped alone
     var heldModifiers: Modifiers = []   // acts as these modifiers while held with other keys
@@ -367,7 +367,7 @@ struct ComplexRule: Codable, Identifiable, Hashable {
 struct KeyActionRule: Codable, Identifiable, Hashable {
     var id = UUID()
     var enabled = true
-    var name = "Key macro"
+    var name = L("Key macro")
     var from = KeyCombo(keyCode: 0xFFFF)
     var device: DeviceRef? = nil
     var repeats = false                 // run again while the key is held (auto-repeat)
@@ -378,13 +378,13 @@ struct KeyActionRule: Codable, Identifiable, Hashable {
 struct ChordRule: Codable, Identifiable, Hashable {
     var id = UUID()
     var enabled = true
-    var name = "Simultaneous keys"
+    var name = L("Simultaneous keys")
     var keys: [UInt16] = []
     var thresholdMs: Int = 60
     var action: Action = .keyboardShortcut(KeyCombo(keyCode: 53))
     var device: DeviceRef? = nil        // nil = all keyboards (device-specific rules need Input Monitoring)
 
-    var keysDisplay: String { keys.isEmpty ? "Not set" : keys.map { KeyCodes.name(for: $0) }.joined(separator: " + ") }
+    var keysDisplay: String { keys.isEmpty ? L("Not set") : keys.map { KeyCodes.name(for: $0) }.joined(separator: " + ") }
 }
 
 // MARK: - Settings
@@ -440,17 +440,17 @@ enum EdgeTarget: Codable, Hashable {
 
     var builtInTitle: String {
         switch self {
-        case .none: "Nothing"
-        case .maximize: "Maximize"
-        case .half: "Half of the screen"
-        case .almostMaximize: "Almost maximize"
-        case .snapArea: "Snap area window frame"
+        case .none: L("Nothing")
+        case .maximize: L("Maximize")
+        case .half: L("Half of the screen")
+        case .almostMaximize: L("Almost maximize")
+        case .snapArea: L("Snap area window frame")
         }
     }
 
     func title(areas: [SnapArea]) -> String {
         if case .snapArea(let id) = self {
-            return areas.first { $0.id == id }.map { "Frame of “\($0.name)”" } ?? "Frame of a deleted snap area"
+            return areas.first { $0.id == id }.map { L("Frame of “%@”", $0.name) } ?? L("Frame of a deleted snap area")
         }
         return builtInTitle
     }
@@ -547,7 +547,7 @@ struct NRect: Codable, Hashable {
 /// BetterTouchTool-style custom snap area: drop a dragged window inside `trigger` to resize it to `target`.
 struct SnapArea: Codable, Identifiable, Hashable {
     var id = UUID()
-    var name = "Snap Area"
+    var name = L("Snap Area")
     var enabled = true
     var displayID: UInt32
     var displayName: String
@@ -569,9 +569,9 @@ enum AccelerationMode: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .system: "System default"
-        case .off: "Off (linear)"
-        case .custom: "Custom"
+        case .system: L("System default")
+        case .off: L("Off (linear)")
+        case .custom: L("Custom")
         }
     }
 }

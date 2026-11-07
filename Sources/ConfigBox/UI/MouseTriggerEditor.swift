@@ -6,9 +6,9 @@ enum MouseTriggerType: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .click: "Button Click"
-        case .scroll: "Modifier + Scroll"
-        case .gesture: "Button Gesture (hold & move)"
+        case .click: L("Button Click")
+        case .scroll: L("Modifier + Scroll")
+        case .gesture: L("Button Gesture (hold & move)")
         }
     }
     init(_ m: MouseTrigger) {

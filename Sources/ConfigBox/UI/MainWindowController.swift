@@ -27,11 +27,11 @@ final class MainWindowController: NSObject, NSWindowDelegate {
                 w.titlebarAppearsTransparent = true
                 w.titleVisibility = .hidden
             case .eventViewer:
-                w = makeWindow(EventViewerView(), title: "ConfigBox Event Viewer", size: NSSize(width: 900, height: 560), min: NSSize(width: 640, height: 400))
+                w = makeWindow(EventViewerView(), title: L("ConfigBox Event Viewer"), size: NSSize(width: 900, height: 560), min: NSSize(width: 640, height: 400))
             case .hidManager:
-                w = makeWindow(HIDManagerView(), title: "HID Device Manager", size: NSSize(width: 640, height: 620), min: NSSize(width: 520, height: 420))
+                w = makeWindow(HIDManagerView(), title: L("HID Device Manager"), size: NSSize(width: 640, height: 620), min: NSSize(width: 520, height: 420))
             case .snapAreas:
-                w = makeWindow(SnapAreaManageView(), title: "Manage Snap Areas", size: NSSize(width: 860, height: 560), min: NSSize(width: 700, height: 420))
+                w = makeWindow(SnapAreaManageView(), title: L("Manage Snap Areas"), size: NSSize(width: 860, height: 560), min: NSSize(width: 700, height: 420))
             }
             w.identifier = NSUserInterfaceItemIdentifier(kind.rawValue)
             windows[kind] = w

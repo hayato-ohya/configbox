@@ -6,13 +6,25 @@ enum UISection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .trackpad: "Trackpad"
-        case .mouse: "Mouse"
-        case .keyboard: "Keyboard Shortcuts"
-        case .remap: "Key Remapping"
-        case .snapping: "Window Snapping"
-        case .switcher: "Window Switcher"
-        case .settings: "Settings"
+        case .trackpad: L("Trackpad")
+        case .mouse: L("Mouse")
+        case .keyboard: L("Keyboard Shortcuts")
+        case .remap: L("Key Remapping")
+        case .snapping: L("Window Snapping")
+        case .switcher: L("Window Switcher")
+        case .settings: L("Settings")
+        }
+    }
+    /// Short enough for all tabs to share one width, even in the narrowest window.
+    var tabTitle: String {
+        switch self {
+        case .trackpad: L("Trackpad")
+        case .mouse: L("Mouse")
+        case .keyboard: L("Shortcuts")
+        case .remap: L("Remapping")
+        case .snapping: L("Snapping")
+        case .switcher: L("Switcher")
+        case .settings: L("Settings")
         }
     }
     var symbol: String {
@@ -24,6 +36,38 @@ enum UISection: String, CaseIterable, Identifiable {
         case .snapping: "rectangle.split.2x1"
         case .switcher: "rectangle.3.group"
         case .settings: "gearshape"
+        }
+    }
+}
+
+/// Top-level tabs. SwiftUI's segmented picker sizes segments by label, so this uses AppKit's equal distribution.
+struct SectionTabs: NSViewRepresentable {
+    @Binding var selection: UISection
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeNSView(context: Context) -> NSSegmentedControl {
+        let sections = UISection.allCases
+        let control = NSSegmentedControl(labels: sections.map(\.tabTitle), trackingMode: .selectOne,
+                                         target: context.coordinator, action: #selector(Coordinator.changed(_:)))
+        control.segmentDistribution = .fillEqually
+        control.controlSize = .large
+        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        control.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        for (i, s) in sections.enumerated() { control.setToolTip(s.title, forSegment: i) }
+        return control
+    }
+
+    func updateNSView(_ control: NSSegmentedControl, context: Context) {
+        context.coordinator.parent = self
+        control.selectedSegment = UISection.allCases.firstIndex(of: selection) ?? -1
+    }
+
+    final class Coordinator: NSObject {
+        var parent: SectionTabs
+        init(_ parent: SectionTabs) { self.parent = parent }
+        @objc func changed(_ sender: NSSegmentedControl) {
+            parent.selection = UISection.allCases[sender.selectedSegment]
         }
     }
 }
@@ -54,15 +98,8 @@ struct MainView: View {
     private var header: some View {
         HStack(spacing: 0) {
             Spacer(minLength: 70)
-            Picker("", selection: $state.section) {
-                ForEach(UISection.allCases) { s in
-                    Label(s.title, systemImage: s.symbol).tag(s)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .controlSize(.large)
-            .frame(maxWidth: 900)
+            SectionTabs(selection: $state.section)
+                .frame(maxWidth: 900)
             Spacer(minLength: 70)
         }
         .padding(.top, 10)
@@ -146,7 +183,7 @@ enum AppIcons {
 
     static func displayName(for idOrPath: String) -> String {
         let url = idOrPath.hasPrefix("/") ? URL(fileURLWithPath: idOrPath) : NSWorkspace.shared.urlForApplication(withBundleIdentifier: idOrPath)
-        guard let url else { return "Not found: \(idOrPath)" }
+        guard let url else { return L("Not found: %@", idOrPath) }
         return FileManager.default.displayName(atPath: url.path) + "  —  " + url.path
     }
 

@@ -24,16 +24,16 @@ enum SystemGestures {
         let threeTap = int("TrackpadThreeFingerTapGesture") ?? 0
         let threeDrag = int("TrackpadThreeFingerDrag") ?? 0
         switch (g.fingers, g.kind) {
-        case (3, .tap): return threeTap != 0 ? "Look up / data detectors (three-finger tap)" : nil
+        case (3, .tap): return threeTap != 0 ? L("Look up / data detectors (three-finger tap)") : nil
         case (3, .swipeLeft), (3, .swipeRight):
-            if threeDrag != 0 { return "Three-finger drag" }
-            return three.0 == 0 ? nil : (three.0 == 1 ? "Swipe between pages" : "Swipe between full-screen apps / Spaces")
+            if threeDrag != 0 { return L("Three-finger drag") }
+            return three.0 == 0 ? nil : (three.0 == 1 ? L("Swipe between pages") : L("Swipe between full-screen apps / Spaces"))
         case (3, .swipeUp), (3, .swipeDown):
-            if threeDrag != 0 { return "Three-finger drag" }
-            return three.1 == 0 ? nil : "Mission Control / App Exposé"
-        case (4, .swipeLeft), (4, .swipeRight): return four.0 == 0 ? nil : "Swipe between full-screen apps / Spaces"
-        case (4, .swipeUp), (4, .swipeDown): return four.1 == 0 ? nil : "Mission Control / App Exposé"
-        case (2, _): return "Two-finger scrolling / secondary click"
+            if threeDrag != 0 { return L("Three-finger drag") }
+            return three.1 == 0 ? nil : L("Mission Control / App Exposé")
+        case (4, .swipeLeft), (4, .swipeRight): return four.0 == 0 ? nil : L("Swipe between full-screen apps / Spaces")
+        case (4, .swipeUp), (4, .swipeDown): return four.1 == 0 ? nil : L("Mission Control / App Exposé")
+        case (2, _): return L("Two-finger scrolling / secondary click")
         default: return nil
         }
     }

@@ -13,7 +13,7 @@ struct KeyRecorder: View {
             Button {
                 recording ? stop() : start()
             } label: {
-                Text(recording ? "Press keys…" : combo.displayOrUnset)
+                Text(recording ? L("Press keys…") : combo.displayOrUnset)
                     .frame(minWidth: 110)
                     .foregroundStyle(recording ? Color.red : (combo.isUnset ? Color.secondary : Color.primary))
             }
@@ -140,6 +140,6 @@ struct IconButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
-        .help(help)
+        .help(L(help))
     }
 }

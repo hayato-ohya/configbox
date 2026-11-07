@@ -70,7 +70,7 @@ struct ChordRecorder: View {
         Button {
             recording ? stop() : start()
         } label: {
-            Text(recording ? (pressed.isEmpty ? "Press 2–3 keys together…" : pressed.map { KeyCodes.name(for: $0) }.joined(separator: " + ")) : (keys.isEmpty ? "Click to record" : keys.map { KeyCodes.name(for: $0) }.joined(separator: " + ")))
+            Text(recording ? (pressed.isEmpty ? L("Press 2–3 keys together…") : pressed.map { KeyCodes.name(for: $0) }.joined(separator: " + ")) : (keys.isEmpty ? L("Click to record") : keys.map { KeyCodes.name(for: $0) }.joined(separator: " + ")))
                 .frame(minWidth: 140)
                 .foregroundStyle(recording ? Color.red : (keys.isEmpty ? Color.secondary : Color.primary))
         }

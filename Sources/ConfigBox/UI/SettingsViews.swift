@@ -88,6 +88,7 @@ struct SettingsView: View {
     @State private var screenRecording = Permissions.screenRecording
     @State private var inputMonitoring = Permissions.inputMonitoring
     @State private var launchAtLogin = Permissions.launchAtLogin
+    @State private var language = AppLanguage.current
     private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -124,6 +125,19 @@ struct SettingsView: View {
             }
 
             Section("General") {
+                Picker("Language", selection: $language) {
+                    Text("System default").tag(AppLanguage.system)
+                    Text(verbatim: "English").tag(AppLanguage.en)
+                    Text(verbatim: "日本語").tag(AppLanguage.ja)
+                }
+                .onChange(of: language) { _, new in AppLanguage.current = new }
+                if language != AppLanguage.atLaunch {
+                    HStack {
+                        Text("Relaunch ConfigBox to apply the new language.").font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Relaunch Now") { AppLanguage.relaunch() }
+                    }
+                }
                 Toggle("Launch at login", isOn: Binding(get: { launchAtLogin }, set: { Permissions.launchAtLogin = $0; launchAtLogin = Permissions.launchAtLogin }))
                 Toggle("Show menu bar icon", isOn: $store.config.general.showMenuBarIcon)
                 Toggle("Keyboard shortcuts & remapping", isOn: $store.config.general.keyboardEnabled)
@@ -177,8 +191,8 @@ struct SettingsView: View {
                 .foregroundStyle(granted ? Color.green : Color.red)
                 .font(.title3)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                Text(detail).font(.caption).foregroundStyle(.secondary)
+                Text(L(title))
+                Text(L(detail)).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             if !granted { Button("Grant…", action: action) }

@@ -3,7 +3,7 @@ import SwiftUI
 extension KeyCombo {
     static let unset = KeyCombo(keyCode: 0xFFFF)
     var isUnset: Bool { keyCode == 0xFFFF }
-    var displayOrUnset: String { isUnset ? "Not set" : display }
+    var displayOrUnset: String { isUnset ? L("Not set") : display }
 }
 
 struct TriggerListView: View {
@@ -33,7 +33,7 @@ struct TriggerListView: View {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("macOS also reacts to \(conflicts.map { $0.gesture.display }.joined(separator: ", ")).").font(.caption.weight(.semibold))
-                        Text("System: " + conflicts.map { "\($0.gesture.display) → \($0.systemFeature)" }.joined(separator: " · ") + ". Both will fire; turn the system gesture off or use another finger count.")
+                        Text(L("System: %@. Both will fire; turn the system gesture off or use another finger count.", conflicts.map { "\($0.gesture.display) → \($0.systemFeature)" }.joined(separator: " · ")))
                             .font(.caption).foregroundStyle(.secondary)
                         Button("Open Trackpad Settings…") { SystemGestures.openTrackpadSettings() }.controlSize(.small)
                     }
@@ -51,7 +51,7 @@ struct TriggerListView: View {
                             Button("Move to Bottom") { store.moveTrigger(t.id, visible: filtered.map(\.id), by: Int.max) }
                             Divider()
                             Button("Duplicate") {
-                                var c = t; c.id = UUID(); c.name = t.name.isEmpty ? "" : t.name + " copy"
+                                var c = t; c.id = UUID(); c.name = t.name.isEmpty ? "" : t.name + L(" copy")
                                 if let i = store.config.triggers.firstIndex(where: { $0.id == t.id }) { store.config.triggers.insert(c, at: i + 1) }
                             }
                             Button("Delete", role: .destructive) { store.remove(triggerIDs: [t.id]) }
@@ -65,7 +65,7 @@ struct TriggerListView: View {
                     ContentUnavailableView(
                         state.section == .trackpad ? "No Trackpad Gestures" : state.section == .mouse ? "No Mouse Triggers" : "No Keyboard Shortcuts",
                         systemImage: state.section.symbol,
-                        description: Text("Click + to add a trigger for \(state.selectedApp == nil ? "all apps" : "this app").")
+                        description: Text("Click + to add a trigger for \(state.selectedApp == nil ? L("all apps") : L("this app")).")
                     )
                 }
             }

@@ -10,7 +10,7 @@ final class SnapAreaEditSession: NSObject, NSWindowDelegate, ObservableObject {
     enum EditTarget: String, CaseIterable, Identifiable {
         case areas, frames
         var id: String { rawValue }
-        var title: String { self == .areas ? "Drop Areas" : "Window Frames" }
+        var title: String { self == .areas ? L("Drop Areas") : L("Window Frames") }
     }
 
     @Published private(set) var isActive = false
@@ -84,7 +84,7 @@ final class SnapAreaEditSession: NSObject, NSWindowDelegate, ObservableObject {
         let f = screen.visibleFrame
         let r = CGRect(x: f.midX - f.width * 0.2, y: f.midY - f.height * 0.2, width: f.width * 0.4, height: f.height * 0.4)
         let n = store.config.snapAreas.count + 1
-        let area = SnapArea(name: "Snap Area \(n)", displayID: screen.displayID, displayName: screen.localizedName,
+        let area = SnapArea(name: L("Snap Area %lld", n), displayID: screen.displayID, displayName: screen.localizedName,
                             trigger: NRect(rect: r, in: screen.frame), colorIndex: (n - 1) % SnapArea.colors.count)
         if !isActive { begin() }          // take the snapshot before adding, so Esc removes the new area too
         store.config.snapAreas.append(area)
@@ -99,7 +99,7 @@ final class SnapAreaEditSession: NSObject, NSWindowDelegate, ObservableObject {
     func duplicate(_ id: UUID) {
         guard var a = store.config.snapAreas.first(where: { $0.id == id }) else { return }
         a.id = UUID()
-        a.name += " copy"
+        a.name += L(" copy")
         a.trigger.x = min(a.trigger.x + 0.03, 1 - a.trigger.w)
         a.trigger.y = max(a.trigger.y - 0.03, 0)
         store.config.snapAreas.append(a)
@@ -247,7 +247,7 @@ final class AreaWindow: NSWindow {
 
     func apply(area: SnapArea) {
         areaColor = area.nsColor
-        title = isTarget ? "Window frame: \(area.name)" : area.name
+        title = isTarget ? L("Window frame: %@", area.name) : area.name
         refreshBackground()
     }
 
@@ -281,7 +281,7 @@ struct AreaWindowContent: View {
                     RoundedRectangle(cornerRadius: 10)
                         .strokeBorder(Color(nsColor: area.nsColor).opacity(active ? 1 : 0.5), style: StrokeStyle(lineWidth: active ? 3 : 2, dash: isTarget ? [10, 6] : []))
                     VStack(spacing: 6) {
-                        Text(isTarget ? "Window for: \(area.name)" : area.name)
+                        Text(isTarget ? L("Window for: %@", area.name) : area.name)
                             .font(.system(size: geo.size.width < 220 ? 13 : 17, weight: .bold))
                             .foregroundStyle(.white.opacity(active ? 1 : 0.6)).shadow(radius: 2)
                             .lineLimit(1)

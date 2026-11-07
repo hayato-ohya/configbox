@@ -29,9 +29,9 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let g = store.config.general
-        menu.addItem(withTitle: "Open ConfigBox…", action: #selector(openWindow), keyEquivalent: ",").target = self
-        menu.addItem(withTitle: "Event Viewer…", action: #selector(openEventViewer), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "HID Device Manager…", action: #selector(openHIDManager), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("Open ConfigBox…"), action: #selector(openWindow), keyEquivalent: ",").target = self
+        menu.addItem(withTitle: L("Event Viewer…"), action: #selector(openEventViewer), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("HID Device Manager…"), action: #selector(openHIDManager), keyEquivalent: "").target = self
         menu.addItem(.separator())
         add(menu, "Keyboard Shortcuts & Remapping", #selector(toggleKeyboard), g.keyboardEnabled)
         add(menu, "Trackpad Gestures", #selector(toggleTrackpad), g.trackpadEnabled)
@@ -40,17 +40,17 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         add(menu, "Window Snapping", #selector(toggleSnapping), store.config.snapping.enabled)
         menu.addItem(.separator())
         if !Permissions.accessibility {
-            let i = menu.addItem(withTitle: "⚠︎ Accessibility permission required", action: #selector(openAccessibility), keyEquivalent: "")
+            let i = menu.addItem(withTitle: L("⚠︎ Accessibility permission required"), action: #selector(openAccessibility), keyEquivalent: "")
             i.target = self
             menu.addItem(.separator())
         }
-        menu.addItem(withTitle: "Reload Config File", action: #selector(reload), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("Reload Config File"), action: #selector(reload), keyEquivalent: "").target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit ConfigBox", action: #selector(quit), keyEquivalent: "q").target = self
+        menu.addItem(withTitle: L("Quit ConfigBox"), action: #selector(quit), keyEquivalent: "q").target = self
     }
 
     private func add(_ menu: NSMenu, _ title: String, _ sel: Selector, _ on: Bool) {
-        let i = menu.addItem(withTitle: title, action: sel, keyEquivalent: "")
+        let i = menu.addItem(withTitle: L(title), action: sel, keyEquivalent: "")
         i.target = self
         i.state = on ? .on : .off
     }

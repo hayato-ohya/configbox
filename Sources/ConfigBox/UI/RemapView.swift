@@ -7,10 +7,10 @@ enum RemapCategory: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .simple: "Simple Modifications"
-        case .macro: "Key → Actions"
-        case .chord: "Simultaneous Keys"
-        case .modTap: "Mod-Tap Keys"
+        case .simple: L("Simple Modifications")
+        case .macro: L("Key → Actions")
+        case .chord: L("Simultaneous Keys")
+        case .modTap: L("Mod-Tap Keys")
         }
     }
     var symbol: String {
@@ -23,10 +23,10 @@ enum RemapCategory: String, CaseIterable, Identifiable {
     }
     var blurb: String {
         switch self {
-        case .simple: "One key becomes another, at the HID level (zero cost, works everywhere, per keyboard if you like)."
-        case .macro: "One key (with or without modifiers) runs a sequence of actions: other shortcuts, text, apps, window tiling…"
-        case .chord: "Two or three keys pressed together run an action; pressed alone they type normally."
-        case .modTap: "Tap for a key or an action sequence, hold for modifiers (QMK Mod-Tap / Karabiner to_if_alone)."
+        case .simple: L("One key becomes another, at the HID level (zero cost, works everywhere, per keyboard if you like).")
+        case .macro: L("One key (with or without modifiers) runs a sequence of actions: other shortcuts, text, apps, window tiling…")
+        case .chord: L("Two or three keys pressed together run an action; pressed alone they type normally.")
+        case .modTap: L("Tap for a key or an action sequence, hold for modifiers (QMK Mod-Tap / Karabiner to_if_alone).")
         }
     }
 }
@@ -153,7 +153,7 @@ private struct RemapRuleList: View {
                     ForEach(store.config.simpleModifications) { m in
                         RuleRow(icon: category.symbol,
                                 title: "\(KeyCodes.name(for: m.from))  →  \(KeyCodes.name(for: m.to))",
-                                subtitle: m.device?.name ?? "All keyboards",
+                                subtitle: m.device?.name ?? L("All keyboards"),
                                 enabled: Binding(get: { m.enabled }, set: { v in set(\.simpleModifications, m.id) { $0.enabled = v } }))
                             .tag(m.id)
                             .contextMenu { menu(\.simpleModifications, m.id) }
@@ -162,7 +162,7 @@ private struct RemapRuleList: View {
                 case .macro:
                     ForEach(store.config.keyActionRules) { r in
                         RuleRow(icon: category.symbol,
-                                title: r.from.isUnset ? "Not set" : r.from.display,
+                                title: r.from.isUnset ? L("Not set") : r.from.display,
                                 subtitle: [r.actions.map(\.display).joined(separator: " → "), r.device?.name].compactMap { $0 }.joined(separator: " · "),
                                 name: r.name,
                                 enabled: Binding(get: { r.enabled }, set: { v in set(\.keyActionRules, r.id) { $0.enabled = v } }))
@@ -197,7 +197,7 @@ private struct RemapRuleList: View {
             .listStyle(.inset)
             .overlay {
                 if isEmpty {
-                    ContentUnavailableView(category.title, systemImage: category.symbol, description: Text(category.blurb + "\n\nClick + to add a rule."))
+                    ContentUnavailableView(category.title, systemImage: category.symbol, description: Text(category.blurb + "\n\n" + L("Click + to add a rule.")))
                 }
             }
             Divider()
@@ -234,9 +234,9 @@ private struct RemapRuleList: View {
 
     private func modTapSummary(_ r: ComplexRule) -> String {
         var parts: [String] = []
-        if !r.tapActions.isEmpty { parts.append("Tap: " + r.tapActions.map(\.display).joined(separator: " → ")) }
-        else if let k = r.aloneKey { parts.append("Tap: \(k.display)") }
-        if !r.heldModifiers.isEmpty { parts.append("Hold: \(r.heldModifiers.symbols)") }
+        if !r.tapActions.isEmpty { parts.append(L("Tap: %@", r.tapActions.map(\.display).joined(separator: " → "))) }
+        else if let k = r.aloneKey { parts.append(L("Tap: %@", k.display)) }
+        if !r.heldModifiers.isEmpty { parts.append(L("Hold: %@", r.heldModifiers.symbols)) }
         if let d = r.device { parts.append(d.name) }
         return parts.joined(separator: " · ")
     }
@@ -374,7 +374,7 @@ private struct DeviceRow: View {
     var note: String = "Other keyboards keep the key unchanged."
     var body: some View {
         LabeledContent("Keyboard") { DevicePicker(device: $device, keyboards: keyboards).frame(maxWidth: 260) }
-        if device != nil { Text(note).font(.caption).foregroundStyle(.secondary) }
+        if device != nil { Text(L(note)).font(.caption).foregroundStyle(.secondary) }
     }
 }
 
@@ -436,8 +436,8 @@ private struct ChordEditor: View {
                     LabeledContent("Threshold", value: "\(rule.thresholdMs) ms")
                 }
                 DeviceRow(device: $rule.device, keyboards: keyboards, note: inputMonitoring
-                          ? "Only fires when every key came from this keyboard."
-                          : "Needs the Input Monitoring permission to tell keyboards apart (Settings › Permissions).")
+                          ? L("Only fires when every key came from this keyboard.")
+                          : L("Needs the Input Monitoring permission to tell keyboards apart (Settings › Permissions)."))
             } header: { Text("Simultaneous keys") } footer: {
                 Text("Keys that could start a chord are held back for the threshold; if the chord is not completed they are delivered unchanged, in order.")
             }

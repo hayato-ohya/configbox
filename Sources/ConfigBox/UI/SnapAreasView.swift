@@ -58,7 +58,7 @@ struct SnapAreasSection: View {
                         }
                     }
                     Stepper(value: $store.config.snapping.areaShowDelayMs, in: 0...2000, step: 100) {
-                        LabeledContent("Show areas after dragging for", value: store.config.snapping.areaShowDelayMs == 0 ? "immediately" : "\(store.config.snapping.areaShowDelayMs) ms")
+                        LabeledContent("Show areas after dragging for", value: store.config.snapping.areaShowDelayMs == 0 ? L("immediately") : "\(store.config.snapping.areaShowDelayMs) ms")
                     }
                     Toggle("Show area names while dragging", isOn: $store.config.snapping.areaShowNames)
                 }
@@ -98,10 +98,10 @@ struct SnapAreaManageView: View {
     @State private var selection: UUID? = CommandLine.arguments.contains("--select-first") ? ConfigStore.shared.config.snapAreas.first?.id : nil
 
     static func summary(_ a: SnapArea) -> String {
-        guard let screen = NSScreen.screen(withDisplayID: a.displayID) else { return "\(a.displayName) · not connected" }
+        guard let screen = NSScreen.screen(withDisplayID: a.displayID) else { return L("%@ · not connected", a.displayName) }
         let r = a.triggerRect(on: screen)
         var s = "\(a.displayName) · \(Int(r.width)) × \(Int(r.height)) pt"
-        if a.target != nil { s += " · custom window frame" }
+        if a.target != nil { s += L(" · custom window frame") }
         return s
     }
 
@@ -194,7 +194,7 @@ struct SnapAreaForm: View {
             }
             GridRow {
                 Text("Display").foregroundStyle(.secondary)
-                Text(screen == nil ? "\(area.displayName) (not connected)" : area.displayName)
+                Text(screen == nil ? L("%@ (not connected)", area.displayName) : area.displayName)
             }
             GridRow {
                 Text("Drop area").foregroundStyle(.secondary)
@@ -285,7 +285,7 @@ struct RectFields: View {
                 field("H", value: r.height) { v in set(CGRect(x: r.minX, y: r.maxY - max(20, v), width: r.width, height: max(20, v)), f) }
             }
         } else {
-            Text(String(format: "x %.2f  y %.2f  w %.2f  h %.2f (normalized)", rect.x, rect.y, rect.w, rect.h)).foregroundStyle(.secondary)
+            Text(String(format: L("x %.2f  y %.2f  w %.2f  h %.2f (normalized)"), rect.x, rect.y, rect.w, rect.h)).foregroundStyle(.secondary)
         }
     }
 

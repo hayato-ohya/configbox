@@ -33,7 +33,7 @@ struct TrackpadSettingsView: View {
                 LabeledContent("Ignore touches larger than") {
                     HStack {
                         Slider(value: $store.config.general.maxTouchSize, in: 0...8, step: 0.5)
-                        Text(store.config.general.maxTouchSize == 0 ? "off" : String(format: "%.1f", store.config.general.maxTouchSize)).monospacedDigit().frame(width: 44, alignment: .trailing)
+                        Text(store.config.general.maxTouchSize == 0 ? L("off") : String(format: "%.1f", store.config.general.maxTouchSize)).monospacedDigit().frame(width: 44, alignment: .trailing)
                     }
                 }
             } header: { Text("Gesture recognition") } footer: {
@@ -58,7 +58,7 @@ struct TrackpadSettingsView: View {
             }
 
             Section {
-                LabeledContent("Multitouch devices", value: TrackpadEngine.shared.isAvailable ? "\(deviceCount) detected · engine \(running ? "running" : "idle")" : "framework unavailable")
+                LabeledContent("Multitouch devices", value: TrackpadEngine.shared.isAvailable ? L("%lld detected · engine %@", deviceCount, running ? L("running") : L("idle")) : L("framework unavailable"))
                 HStack {
                     Button("Restart Engine") { TrackpadEngine.shared.restart(); refresh() }
                     Button("System Trackpad Settings…") { SystemGestures.openTrackpadSettings() }

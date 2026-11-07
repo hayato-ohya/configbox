@@ -99,7 +99,7 @@ struct AttachHUDView: View {
                     Text("ConfigBox is frontmost. Click the window you want to attach.").font(.callout)
                 } else if let f = session.frontFrame {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    Text("\(session.frontApp): \(session.frontTitle.isEmpty ? "window" : session.frontTitle)")
+                    Text("\(session.frontApp): \(session.frontTitle.isEmpty ? L("window") : session.frontTitle)")
                         .font(.callout).lineLimit(1)
                     Spacer()
                     Text("\(Int(f.width)) × \(Int(f.height))").font(.system(.callout, design: .monospaced)).foregroundStyle(.secondary)

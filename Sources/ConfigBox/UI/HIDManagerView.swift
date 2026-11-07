@@ -44,7 +44,7 @@ struct HIDManagerView: View {
                 } else {
                     ForEach(status) { s in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(s.device.map { "\($0.name)  (\(String(format: "0x%04X / 0x%04X", $0.vendorId, $0.productId)))" } ?? "All keyboards (global)")
+                            Text(s.device.map { "\($0.name)  (\(String(format: "0x%04X / 0x%04X", $0.vendorId, $0.productId)))" } ?? L("All keyboards (global)"))
                                 .font(.callout.weight(.medium))
                             if s.mappings.isEmpty {
                                 Text(s.device == nil ? "No mappings" : "No device-specific mappings").font(.caption).foregroundStyle(.secondary)

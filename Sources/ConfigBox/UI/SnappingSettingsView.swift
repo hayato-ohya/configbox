@@ -72,9 +72,9 @@ struct EdgeTargetPicker: View {
     @EnvironmentObject var store: ConfigStore
 
     var body: some View {
-        Picker(title, selection: $selection) {
+        Picker(L(title), selection: $selection) {
             Text("Nothing").tag(EdgeTarget.none)
-            Text(halfName).tag(EdgeTarget.half)
+            Text(L(halfName)).tag(EdgeTarget.half)
             Text("Maximize").tag(EdgeTarget.maximize)
             Text("Almost maximize").tag(EdgeTarget.almostMaximize)
             if !store.config.snapAreas.isEmpty {

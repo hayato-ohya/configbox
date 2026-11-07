@@ -69,6 +69,18 @@ final class ConfigStore: ObservableObject {
     /// Binding to one element of a config array, looked up by id on every access.
     /// Index-based bindings (`$store.config.items[i]`) crash when the element is removed while a
     /// view still holds the binding; this one keeps returning the last known value instead.
+    /// Adds keyboards not seen before (connected ones and any named by a rule) to `knownKeyboards`.
+    /// Writes only when something is new, so polling this does not churn saves or SwiftUI updates.
+    func rememberKeyboards(_ connected: [DeviceRef]) {
+        let fromRules = config.simpleModifications.compactMap(\.device) + config.complexRules.compactMap(\.device)
+            + config.chordRules.compactMap(\.device) + config.keyActionRules.compactMap(\.device)
+        var known = config.knownKeyboards
+        for d in connected + fromRules where !known.contains(where: { $0.vendorId == d.vendorId && $0.productId == d.productId }) {
+            known.append(d)
+        }
+        if known.count != config.knownKeyboards.count { config.knownKeyboards = known }
+    }
+
     func binding<T: Identifiable & Equatable>(_ keyPath: WritableKeyPath<Config, [T]>, id: T.ID, fallback: T) -> Binding<T> {
         var last = fallback
         return Binding(

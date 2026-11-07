@@ -63,9 +63,10 @@ struct KeyRecorder: View {
 
 struct KeyPicker: View {
     @Binding var code: UInt16
+    var asSource = false
     var body: some View {
         Picker("", selection: $code) {
-            ForEach(KeyCodes.pickable) { Text($0.name).tag($0.code) }
+            ForEach(asSource ? KeyCodes.pickableSources : KeyCodes.pickable) { Text($0.name).tag($0.code) }
         }
         .labelsHidden()
     }
@@ -76,6 +77,7 @@ struct KeyPicker: View {
 struct KeyComboEditor: View {
     @Binding var combo: KeyCombo
     var allowClear = true
+    var asSource = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -85,7 +87,7 @@ struct KeyComboEditor: View {
                 Picker("", selection: Binding(get: { combo.isUnset ? UInt16.max : combo.keyCode },
                                               set: { combo = KeyCombo(keyCode: $0, modifiers: combo.modifiers) })) {
                     if combo.isUnset { Text("Choose key…").tag(UInt16.max) }
-                    ForEach(KeyCodes.pickable) { Text($0.name).tag($0.code) }
+                    ForEach(asSource ? KeyCodes.pickableSources : KeyCodes.pickable) { Text($0.name).tag($0.code) }
                 }
                 .labelsHidden().frame(width: 150)
             }

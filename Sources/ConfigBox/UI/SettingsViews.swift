@@ -127,6 +127,9 @@ struct SettingsView: View {
                 Toggle("Launch at login", isOn: Binding(get: { launchAtLogin }, set: { Permissions.launchAtLogin = $0; launchAtLogin = Permissions.launchAtLogin }))
                 Toggle("Show menu bar icon", isOn: $store.config.general.showMenuBarIcon)
                 Toggle("Keyboard shortcuts & remapping", isOn: $store.config.general.keyboardEnabled)
+                Toggle("Type on JIS keyboards as ANSI (US)", isOn: $store.config.general.treatJISAsANSI)
+                    .disabled(!store.config.general.keyboardEnabled)
+                    .help("Keys on JIS keyboards produce the characters of a US layout, e.g. Shift+2 types @. Only works while ConfigBox is running.")
                 Toggle("Trackpad gestures", isOn: $store.config.general.trackpadEnabled)
                 Toggle("Mouse triggers", isOn: $store.config.general.mouseEnabled)
                 if !TrackpadEngine.shared.isAvailable {

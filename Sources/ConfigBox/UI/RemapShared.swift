@@ -5,14 +5,29 @@ import Combine
 struct DevicePicker: View {
     @Binding var device: DeviceRef?
     let keyboards: [HIDDeviceInfo]
+    @EnvironmentObject var store: ConfigStore
+
+    private func key(_ d: DeviceRef) -> String { "\(d.vendorId):\(d.productId)" }
+
+    private var connected: [DeviceRef] {
+        var seen = Set<String>()
+        return keyboards.map(\.ref).filter { seen.insert(key($0)).inserted }
+    }
+
+    /// Remembered keyboards that are not plugged in, plus this rule's own device if it is neither.
+    private var disconnected: [DeviceRef] {
+        var seen = Set(connected.map(key))
+        return (store.config.knownKeyboards + [device].compactMap { $0 }).filter { seen.insert(key($0)).inserted }
+    }
 
     var body: some View {
-        Picker("", selection: Binding(get: { device.map { "\($0.vendorId):\($0.productId)" } ?? "" },
-                                      set: { key in device = keyboards.first { "\($0.vendorId):\($0.productId)" == key }?.ref })) {
+        Picker("", selection: Binding(get: { device.map(key) ?? "" },
+                                      set: { k in device = (connected + disconnected).first { key($0) == k } })) {
             Text("All keyboards").tag("")
-            ForEach(keyboards) { k in Text(k.name).tag("\(k.vendorId):\(k.productId)") }
-            if let d = device, !keyboards.contains(where: { $0.vendorId == d.vendorId && $0.productId == d.productId }) {
-                Text("\(d.name) (disconnected)").tag("\(d.vendorId):\(d.productId)")
+            ForEach(connected, id: \.self) { d in Text(d.name).tag(key(d)) }
+            if !disconnected.isEmpty {
+                Divider()
+                ForEach(disconnected, id: \.self) { d in Text("\(d.name) (disconnected)").tag(key(d)) }
             }
         }
         .labelsHidden()

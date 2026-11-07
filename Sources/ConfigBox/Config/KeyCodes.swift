@@ -12,6 +12,12 @@ enum KeyCodes {
 
     static let capsLock: UInt16 = 57
     static let f18: UInt16 = 79
+    static let muhenkan: UInt16 = 0x100
+    static let henkan: UInt16 = 0x101
+    static let katakanaHiragana: UInt16 = 0x102
+    /// Keys that exist only as HID usages: they can be remapped from, but never appear in a CGEvent,
+    /// so they cannot be sent, and the event tap can only see them through a routing key.
+    static let hidOnly: Set<UInt16> = [muhenkan, henkan, katakanaHiragana]
 
     private static func k(_ code: UInt16, _ name: String, _ usage: UInt64) -> Key {
         Key(code: code, name: name, hid: usage == 0 ? 0 : 0x7_0000_0000 | usage)
@@ -28,7 +34,7 @@ enum KeyCodes {
         k(18, "1", 0x1E), k(19, "2", 0x1F), k(20, "3", 0x20), k(21, "4", 0x21), k(23, "5", 0x22),
         k(22, "6", 0x23), k(26, "7", 0x24), k(28, "8", 0x25), k(25, "9", 0x26), k(29, "0", 0x27),
         // Punctuation
-        k(50, "`", 0x35), k(27, "-", 0x2D), k(24, "=", 0x2E), k(33, "[", 0x2F), k(30, "]", 0x30), k(42, "\\", 0x31),
+        k(50, "` / 半角全角 (Windows)", 0x35), k(27, "-", 0x2D), k(24, "=", 0x2E), k(33, "[", 0x2F), k(30, "]", 0x30), k(42, "\\", 0x31),
         k(41, ";", 0x33), k(39, "'", 0x34), k(43, ",", 0x36), k(47, ".", 0x37), k(44, "/", 0x38), k(10, "§", 0x64),
         // Control keys
         k(36, "Return", 0x28), k(48, "Tab", 0x2B), k(49, "Space", 0x2C), k(51, "Delete", 0x2A), k(117, "Fwd Delete", 0x4C),
@@ -50,7 +56,9 @@ enum KeyCodes {
         k(65, "Keypad .", 0x63), k(67, "Keypad *", 0x55), k(69, "Keypad +", 0x57), k(71, "Keypad Clear / Num Lock (PC)", 0x53),
         k(75, "Keypad /", 0x54), k(76, "Keypad Enter", 0x58), k(78, "Keypad -", 0x56), k(81, "Keypad =", 0x67),
         // JIS
-        k(93, "¥ (JIS)", 0x89), k(94, "_ (JIS)", 0x87), k(95, "Keypad , (JIS)", 0x85), k(102, "英数 (JIS) / 無変換 (PC)", 0x91), k(104, "かな (JIS) / 変換 (PC)", 0x90),
+        k(93, "¥ (JIS)", 0x89), k(94, "_ (JIS)", 0x87), k(95, "Keypad , (JIS)", 0x85), k(102, "英数 (JIS)", 0x91), k(104, "かな (JIS)", 0x90),
+        // Windows JIS keys. macOS assigns them no virtual key code, so these codes are private to ConfigBox.
+        k(muhenkan, "無変換 (Windows)", 0x8B), k(henkan, "変換 (Windows)", 0x8A), k(katakanaHiragana, "カタカナ/ひらがな (Windows)", 0x88),
     ]
 
     static let byCode: [UInt16: Key] = Dictionary(uniqueKeysWithValues: all.map { ($0.code, $0) })
@@ -94,5 +102,7 @@ enum KeyCodes {
     }
 
     /// Keys sensible as a remap source/destination, sorted for UI pickers.
-    static let pickable: [Key] = all
+    static let pickable: [Key] = all.filter { !hidOnly.contains($0.code) }
+    /// Same, for the key being remapped: also offers keys that exist only at the HID level.
+    static let pickableSources: [Key] = all
 }

@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import CoreGraphics
 
 /// Single event tap shared by the window switcher, the key remapper and shortcut triggers.
@@ -12,7 +13,10 @@ final class InputRouter {
     /// Set while the UI records a shortcut so the recorded keys are not intercepted.
     var recording = false
     private(set) var keyboardEnabled = true
+    private var treatJISAsANSI = false
     private var shortcutTriggers: [Trigger] = []
+
+    private static let ansiKeyboardType: Int64 = 40
 
     private init() {}
 
@@ -26,6 +30,7 @@ final class InputRouter {
 
     func apply(config: Config) {
         keyboardEnabled = config.general.keyboardEnabled
+        treatJISAsANSI = keyboardEnabled && config.general.treatJISAsANSI
         remapper.apply(simple: keyboardEnabled ? config.simpleModifications : [],
                        complex: keyboardEnabled ? config.complexRules : [],
                        macros: keyboardEnabled ? config.keyActionRules : [])
@@ -59,11 +64,12 @@ final class InputRouter {
         default:
             break
         }
+        let layoutNote = rewriteJISToANSI(type, event) ? "JIS → ANSI; " : ""
         if recording { return event }
 
         let monitor = EventMonitor.shared
         func done(_ out: CGEvent?, _ note: String) -> CGEvent? {
-            if monitor.isActive { monitor.record(type: type, event: event, note: note) }
+            if monitor.isActive { monitor.record(type: type, event: event, note: layoutNote + note) }
             return out
         }
 
@@ -95,6 +101,16 @@ final class InputRouter {
             return done(nil, remapNote + "consumed: trigger → \(trigger.action.display)")
         }
         return done(event, remapNote + "pass")
+    }
+
+    /// Makes the receiving app pick the ANSI table of the input source for a key on a JIS keyboard.
+    /// A HID remap cannot do this: on JIS, Shift+2 differs from ANSI while plain 2 does not.
+    private func rewriteJISToANSI(_ type: CGEventType, _ event: CGEvent) -> Bool {
+        guard treatJISAsANSI, type == .keyDown || type == .keyUp || type == .flagsChanged else { return false }
+        let current = event.getIntegerValueField(.keyboardEventKeyboardType)
+        guard KBGetLayoutType(Int16(truncatingIfNeeded: current)) == kKeyboardJIS else { return false }
+        event.setIntegerValueField(.keyboardEventKeyboardType, value: Self.ansiKeyboardType)
+        return true
     }
 
     private func matchMacro(_ event: CGEvent) -> KeyActionRule? {

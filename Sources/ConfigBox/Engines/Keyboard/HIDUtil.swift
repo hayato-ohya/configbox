@@ -104,17 +104,28 @@ enum HIDUtil {
 
     /// Reads the mappings currently installed in the HID system (blocking; run off the main thread).
     static func currentStatus() -> [DeviceStatus] {
-        var out: [DeviceStatus] = [DeviceStatus(device: nil, mappings: parse(output(["property", "--get", "UserKeyMapping"])))]
+        let global = installedMappings(output(["property", "--get", "UserKeyMapping"]))
+        var out: [DeviceStatus] = [DeviceStatus(device: nil, mappings: global)]
         var seen = Set<String>()
         for d in HIDDevices.list() where d.kind == .keyboard {
             let ref = DeviceRef(vendorId: d.vendorId, productId: d.productId, name: d.name)
             let key = "\(ref.vendorId):\(ref.productId)"
             guard !seen.contains(key) else { continue }
             seen.insert(key)
-            let maps = parse(output(["property", "--matching", matchJSON(ref), "--get", "UserKeyMapping"]))
-            out.append(DeviceStatus(device: ref, mappings: maps))
+            // A keyboard's list repeats the global mappings; show only what is specific to it.
+            let maps = installedMappings(output(["property", "--matching", matchJSON(ref), "--get", "UserKeyMapping"]))
+            out.append(DeviceStatus(device: ref, mappings: maps.filter { !global.contains($0) }))
         }
         return out
+    }
+
+    /// `hidutil --get` prints one entry per HID service. They hold the same list apart from any
+    /// per-device mappings, so report the most common non-empty one rather than concatenating them.
+    private static func installedMappings(_ text: String) -> [HIDMapping] {
+        let lists = text.components(separatedBy: "UserKeyMapping").dropFirst().map(parse).filter { !$0.isEmpty }
+        var counts: [[HIDMapping]: Int] = [:]
+        for list in lists { counts[list, default: 0] += 1 }
+        return counts.max { $0.value < $1.value }?.key ?? []
     }
 
     private static func parse(_ text: String) -> [HIDMapping] {
@@ -168,7 +179,10 @@ enum HIDUtil {
     // MARK: Helpers
 
     private static func matchJSON(_ d: DeviceRef) -> String {
-        "{\"VendorID\":\(d.vendorId),\"ProductID\":\(d.productId)}"
+        guard d.vendorId == 0 else { return "{\"VendorID\":\(d.vendorId),\"ProductID\":\(d.productId)}" }
+        // A built-in keyboard has no IDs, and matching on 0:0 also hits every internal sensor service.
+        let name = d.name.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        return "{\"Product\":\"\(name)\",\"PrimaryUsagePage\":1,\"PrimaryUsage\":6}"
     }
 
     private static func mappingJSON(_ maps: [HIDMapping]) -> String {

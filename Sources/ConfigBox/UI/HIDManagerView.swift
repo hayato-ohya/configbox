@@ -8,8 +8,14 @@ struct HIDManagerView: View {
     @State private var agentInstalled = HIDUtil.launchAgentInstalled
 
     private var configured: Int {
-        store.config.simpleModifications.filter(\.enabled).count +
-        store.config.complexRules.filter { $0.enabled && ($0.from == KeyCodes.capsLock || $0.device != nil) }.count
+        func routed(_ code: UInt16, _ device: DeviceRef?) -> Bool {
+            device != nil || code == KeyCodes.capsLock || KeyCodes.hidOnly.contains(code)
+        }
+        let c = store.config
+        return c.simpleModifications.filter(\.enabled).count
+            + c.complexRules.filter { $0.enabled && routed($0.from, $0.device) }.count
+            + c.keyActionRules.filter { $0.enabled && !$0.from.isUnset && routed($0.from.keyCode, $0.device) }.count
+            - InputRouter.shared.remapper.unroutable.count
     }
 
     var body: some View {
@@ -27,7 +33,7 @@ struct HIDManagerView: View {
                     Button("Deactivate") { HIDUtil.clear(); refresh() }.disabled(!HIDUtil.isActive)
                 }
             } header: { Text("Status") } footer: {
-                Text("“Activate” installs the simple modifications (and the Caps Lock → F18 route used by Mod-Tap keys) into the HID event system. “Deactivate” removes exactly what ConfigBox installed.")
+                Text("“Activate” installs the simple modifications and the F-key routes used by Key → Actions and Mod-Tap rules into the HID event system. “Deactivate” removes exactly what ConfigBox installed.")
             }
 
             Section {
@@ -41,7 +47,7 @@ struct HIDManagerView: View {
                             Text(s.device.map { "\($0.name)  (\(String(format: "0x%04X / 0x%04X", $0.vendorId, $0.productId)))" } ?? "All keyboards (global)")
                                 .font(.callout.weight(.medium))
                             if s.mappings.isEmpty {
-                                Text("no UserKeyMapping").font(.caption).foregroundStyle(.secondary)
+                                Text(s.device == nil ? "No mappings" : "No device-specific mappings").font(.caption).foregroundStyle(.secondary)
                             } else {
                                 ForEach(Array(s.mappings.enumerated()), id: \.offset) { _, m in
                                     Text(m.display).font(.system(.caption, design: .monospaced))
@@ -88,8 +94,7 @@ struct HIDManagerView: View {
     }
 
     private func activate() {
-        let cfg = store.config
-        InputRouter.shared.remapper.apply(simple: cfg.simpleModifications, complex: cfg.complexRules)
+        InputRouter.shared.apply(config: store.config)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { refresh() }
     }
 

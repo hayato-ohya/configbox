@@ -214,7 +214,7 @@ enum WindowAction: String, Codable, CaseIterable, Identifiable {
 }
 
 enum SystemAction: String, Codable, CaseIterable, Identifiable {
-    case missionControl, applicationWindows, showDesktop
+    case missionControl, applicationWindows, showDesktop, launchpad
     case moveSpaceLeft, moveSpaceRight
     case lockScreen, sleepDisplay
     case volumeUp, volumeDown, mute
@@ -230,6 +230,7 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .missionControl: "Mission Control"
         case .applicationWindows: "Application Windows (App Exposé)"
         case .showDesktop: "Show Desktop"
+        case .launchpad: "Launchpad (Apps)"
         case .moveSpaceLeft: "Move Left a Space"
         case .moveSpaceRight: "Move Right a Space"
         case .lockScreen: "Lock Screen"
@@ -621,6 +622,7 @@ struct GeneralSettings: Codable {
     var swipeThreshold: Double = 0.10   // normalized trackpad units
     var tapMaxDurationMs: Int = 250
     var keepHIDMappingsAtLogin = false  // install a LaunchAgent so hidutil mappings survive without ConfigBox
+    var treatJISAsANSI = false          // type characters on JIS keyboards with the ANSI table of the input source
     /// After a swipe gesture fired, swallow trackpad scrolling until the fingers are up (+ this many ms),
     /// so lifting fingers one by one does not scroll the page underneath.
     var suppressScrollAfterGesture = true
@@ -642,6 +644,7 @@ struct GeneralSettings: Codable {
         swipeThreshold = try c.decodeIfPresent(Double.self, forKey: .swipeThreshold) ?? swipeThreshold
         tapMaxDurationMs = try c.decodeIfPresent(Int.self, forKey: .tapMaxDurationMs) ?? tapMaxDurationMs
         keepHIDMappingsAtLogin = try c.decodeIfPresent(Bool.self, forKey: .keepHIDMappingsAtLogin) ?? keepHIDMappingsAtLogin
+        treatJISAsANSI = try c.decodeIfPresent(Bool.self, forKey: .treatJISAsANSI) ?? treatJISAsANSI
         suppressScrollAfterGesture = try c.decodeIfPresent(Bool.self, forKey: .suppressScrollAfterGesture) ?? suppressScrollAfterGesture
         scrollSuppressTailMs = try c.decodeIfPresent(Int.self, forKey: .scrollSuppressTailMs) ?? scrollSuppressTailMs
         gestureCooldownMs = try c.decodeIfPresent(Int.self, forKey: .gestureCooldownMs) ?? gestureCooldownMs
@@ -664,6 +667,8 @@ struct Config: Codable {
     var chordRules: [ChordRule] = []
     var keyActionRules: [KeyActionRule] = []
     var apps: [AppRef] = []
+    /// Every keyboard seen so far, so rules can still target one while it is unplugged.
+    var knownKeyboards: [DeviceRef] = []
 
     init() {}
     init(from decoder: Decoder) throws {
@@ -679,6 +684,7 @@ struct Config: Codable {
         chordRules = try c.decodeIfPresent([ChordRule].self, forKey: .chordRules) ?? []
         keyActionRules = try c.decodeIfPresent([KeyActionRule].self, forKey: .keyActionRules) ?? []
         apps = try c.decodeIfPresent([AppRef].self, forKey: .apps) ?? []
+        knownKeyboards = try c.decodeIfPresent([DeviceRef].self, forKey: .knownKeyboards) ?? []
     }
 
     static var sample: Config {

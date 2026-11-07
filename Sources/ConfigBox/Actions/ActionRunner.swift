@@ -67,6 +67,11 @@ enum SystemActions {
         case .missionControl: openMissionControl(args: [])
         case .applicationWindows: openMissionControl(args: ["2"])
         case .showDesktop: openMissionControl(args: ["1"])
+        case .launchpad:
+            // macOS 26 replaced Launchpad with the Apps launcher.
+            let launchpad = "/System/Applications/Launchpad.app"
+            let path = FileManager.default.fileExists(atPath: launchpad) ? launchpad : "/System/Applications/Apps.app"
+            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: .init())
         case .moveSpaceLeft: KeySynth.tap(KeyCombo(keyCode: 123, modifiers: [.control]))
         case .moveSpaceRight: KeySynth.tap(KeyCombo(keyCode: 124, modifiers: [.control]))
         case .lockScreen: KeySynth.tap(KeyCombo(keyCode: 12, modifiers: [.control, .command]))

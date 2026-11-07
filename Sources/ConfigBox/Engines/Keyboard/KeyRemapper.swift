@@ -33,16 +33,18 @@ final class KeyRemapper {
         // keyboard (or that uses Caps Lock, which user space cannot intercept) gets its source key
         // rerouted to one of these at the HID level, on that keyboard only, and the tap handles the
         // routed key. Other keyboards keep the original key untouched.
-        var routingPool: [UInt16] = [79, 80, 90, 105, 107, 113, 106, 64]   // F18 F19 F20 F13 F14 F15 F16 F17
+        // macOS delivers no key event for F21–F24, so they cannot be used here.
+        var routingPool: [UInt16] = [79, 80, 90, 105, 107, 113, 106, 64, 81, 95]   // F18 F19 F20 F13 F14 F15 F16 F17 Keypad= Keypad,
+        unroutable = []
         let used = Set(complex.filter(\.enabled).map(\.from)).union(macros.filter(\.enabled).map(\.from.keyCode))
         routingPool.removeAll { used.contains($0) }
 
         // Key macros limited to one keyboard (or on Caps Lock) use the same per-device routing trick.
         for m in macros where m.enabled && !m.from.isUnset {
             var src = m.from.keyCode
-            if m.device != nil || src == KeyCodes.capsLock {
+            if m.device != nil || src == KeyCodes.capsLock || KeyCodes.hidOnly.contains(src) {
                 guard let route = routingPool.first, let f = KeyCodes.hidUsage(for: src), let t = KeyCodes.hidUsage(for: route) else {
-                    Log.error("No free routing key for macro '\(m.name)'"); continue
+                    Log.error("No free routing key for macro '\(m.name)'"); unroutable.append(m.name); continue
                 }
                 routingPool.removeFirst()
                 if let dev = m.device { perDevice[dev, default: []].append(HIDMapping(src: f, dst: t)) }
@@ -54,10 +56,10 @@ final class KeyRemapper {
 
         for r in complex where r.enabled {
             var src = r.from
-            let needsRoute = r.device != nil || src == KeyCodes.capsLock
+            let needsRoute = r.device != nil || src == KeyCodes.capsLock || KeyCodes.hidOnly.contains(src)
             if needsRoute {
                 guard let route = routingPool.first, let f = KeyCodes.hidUsage(for: r.from), let t = KeyCodes.hidUsage(for: route) else {
-                    Log.error("No free routing key for rule '\(r.name)'"); continue
+                    Log.error("No free routing key for rule '\(r.name)'"); unroutable.append(r.name); continue
                 }
                 routingPool.removeFirst()
                 if let dev = r.device { perDevice[dev, default: []].append(HIDMapping(src: f, dst: t)) }
@@ -70,6 +72,8 @@ final class KeyRemapper {
     }
 
     var hasRules: Bool { !rules.isEmpty }
+    /// Rules that could not be installed because every routing key is taken.
+    private(set) var unroutable: [String] = []
 
     /// Returns true when the event was consumed.
     func handle(_ type: CGEventType, _ event: CGEvent) -> Bool {

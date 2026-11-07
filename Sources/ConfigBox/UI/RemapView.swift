@@ -37,19 +37,31 @@ struct RemapView: View {
     @ObservedObject var state: UIState
     @State private var keyboards: [HIDDeviceInfo] = []
     @State private var karabiner = false
+    @State private var unroutable: [String] = []
 
     var body: some View {
         HSplitView {
             RemapSidebar(state: state)
                 .frame(minWidth: 200, idealWidth: 230, maxWidth: 300, maxHeight: .infinity)
-            RemapRuleList(state: state, keyboards: keyboards, karabiner: karabiner)
+            RemapRuleList(state: state, keyboards: keyboards, karabiner: karabiner, unroutable: unroutable)
                 .frame(minWidth: 300, idealWidth: 380, maxHeight: .infinity)
             RemapEditorContainer(state: state, keyboards: keyboards)
                 .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { keyboards = HIDDevices.keyboards(); karabiner = HIDDevices.karabinerActive }
-        .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in karabiner = HIDDevices.karabinerActive }
+        .onAppear(perform: refreshDevices)
+        .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in refreshDevices() }
+    }
+
+    /// Polled while this tab is on screen, so plugging a keyboard in or out shows up without reopening it.
+    private func refreshDevices() {
+        let now = HIDDevices.keyboards()
+        if now != keyboards { keyboards = now }
+        store.rememberKeyboards(now.map(\.ref))
+        let active = HIDDevices.karabinerActive
+        if active != karabiner { karabiner = active }
+        let failed = InputRouter.shared.remapper.unroutable
+        if failed != unroutable { unroutable = failed }
     }
 }
 
@@ -104,6 +116,7 @@ private struct RemapRuleList: View {
     @ObservedObject var state: UIState
     let keyboards: [HIDDeviceInfo]
     let karabiner: Bool
+    let unroutable: [String]
 
     private var category: RemapCategory { state.remapCategory }
 
@@ -120,6 +133,15 @@ private struct RemapRuleList: View {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     Text("Karabiner-Elements is active: device-specific rules cannot see keys from the keyboards it manages. Untick them in Karabiner › Devices, or quit Karabiner.")
+                        .font(.caption)
+                }
+                .padding(10)
+                .background(Color.orange.opacity(0.12))
+            }
+            if !unroutable.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text("Not working: \(unroutable.joined(separator: ", ")). Device-limited Key → Actions and Mod-Tap rules can use at most 10 routing keys. Set some of them to All keyboards, or turn others off.")
                         .font(.caption)
                 }
                 .padding(10)
@@ -182,6 +204,27 @@ private struct RemapRuleList: View {
             HStack(spacing: 4) {
                 IconButton(systemName: "plus", help: "Add") { add() }
                 IconButton(systemName: "minus", help: "Remove selected") { remove() }.disabled(state.selectedRemapID == nil)
+                if category == .simple {
+                    Menu {
+                        Section("JIS keyboard as US (ANSI)") {
+                            Button("¥ → ` ~  and  _ (ろ) → \\ |") { addPreset(jisAsUS: true) }
+                            Button("Also 英数 → Left ⌘, かな → Right ⌘") { addPreset(jisAsUS: true, commandKeys: true) }
+                        }
+                        Section("Windows keyboard on a Mac") {
+                            Button("無変換 → 英数, 変換 → かな") {
+                                addSimple(from: KeyCodes.muhenkan, to: 102)
+                                addSimple(from: KeyCodes.henkan, to: 104)
+                            }
+                        }
+                        Section("Common") {
+                            Button("Caps Lock → Escape") { addSimple(from: KeyCodes.capsLock, to: 53) }
+                            Button("Caps Lock → Left ⌃") { addSimple(from: KeyCodes.capsLock, to: 59) }
+                            Button("Right ⌘ → Right ⌥") { addSimple(from: 54, to: 61) }
+                        }
+                    } label: { Label("Presets", systemImage: "wand.and.stars") }
+                    .menuStyle(.borderlessButton).fixedSize()
+                    .help("Add commonly used mappings (you can set a keyboard for each afterwards)")
+                }
                 Spacer()
                 Text("\(total) rule\(total == 1 ? "" : "s") · drag to reorder").font(.caption).foregroundStyle(.secondary)
             }
@@ -241,6 +284,23 @@ private struct RemapRuleList: View {
             let r = ChordRule(); store.config.chordRules.append(r); state.selectedRemapID = r.id
         case .modTap:
             let r = ComplexRule(from: KeyCodes.capsLock, aloneKey: KeyCombo(keyCode: 53), heldModifiers: [.control]); store.config.complexRules.append(r); state.selectedRemapID = r.id
+        }
+    }
+
+    private func addSimple(from: UInt16, to: UInt16) {
+        guard !store.config.simpleModifications.contains(where: { $0.from == from && $0.to == to && $0.device == nil }) else { return }
+        let m = SimpleModification(from: from, to: to)
+        store.config.simpleModifications.append(m)
+        state.selectedRemapID = m.id
+    }
+
+    /// JIS keyboards used with a U.S. layout: give the leftover JIS keys the ANSI keys they are missing.
+    private func addPreset(jisAsUS: Bool, commandKeys: Bool = false) {
+        addSimple(from: 93, to: 50)        // ¥ (international3) → ` ~
+        addSimple(from: 94, to: 42)        // _ ろ (international1) → \ |
+        if commandKeys {
+            addSimple(from: 102, to: 55)   // 英数 → Left ⌘
+            addSimple(from: 104, to: 54)   // かな → Right ⌘
         }
     }
 
@@ -324,7 +384,7 @@ private struct SimpleEditor: View {
     var body: some View {
         Form {
             Section("Mapping") {
-                LabeledContent("From") { KeyPicker(code: $rule.from).frame(maxWidth: 220) }
+                LabeledContent("From") { KeyPicker(code: $rule.from, asSource: true).frame(maxWidth: 220) }
                 LabeledContent("To") { KeyPicker(code: $rule.to).frame(maxWidth: 220) }
                 Toggle("Enabled", isOn: $rule.enabled)
             }
@@ -348,7 +408,7 @@ private struct MacroEditor: View {
                 Toggle("Enabled", isOn: $rule.enabled)
             }
             Section("When pressed") {
-                KeyComboEditor(combo: $rule.from)
+                KeyComboEditor(combo: $rule.from, asSource: true)
                 DeviceRow(device: $rule.device, keyboards: keyboards)
                 Toggle("Repeat while the key is held", isOn: $rule.repeats)
             }
@@ -400,7 +460,7 @@ private struct ModTapEditor: View {
                 Toggle("Enabled", isOn: $rule.enabled)
             }
             Section("Key") {
-                LabeledContent("Key") { KeyPicker(code: $rule.from).frame(maxWidth: 220) }
+                LabeledContent("Key") { KeyPicker(code: $rule.from, asSource: true).frame(maxWidth: 220) }
                 DeviceRow(device: $rule.device, keyboards: keyboards)
             }
             Section("Tap") {

@@ -58,7 +58,8 @@ enum HIDDevices {
     }
 
     static func keyboards() -> [HIDDeviceInfo] {
-        list().filter { $0.kind == .keyboard && $0.vendorId != 0 && !$0.name.localizedCaseInsensitiveContains("Karabiner") }
+        // Apple silicon built-in keyboards report no vendor or product ID.
+        list().filter { $0.kind == .keyboard && ($0.vendorId != 0 || $0.builtIn) && !$0.name.localizedCaseInsensitiveContains("Karabiner") }
     }
 
     /// True while Karabiner-Elements' virtual keyboard driver is active. Karabiner seizes the physical

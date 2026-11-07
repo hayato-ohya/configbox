@@ -687,6 +687,18 @@ struct Config: Codable {
         knownKeyboards = try c.decodeIfPresent([DeviceRef].self, forKey: .knownKeyboards) ?? []
     }
 
+    /// Actions that run arbitrary code, counted so a restored file from elsewhere can be flagged.
+    var scriptActionCount: Int {
+        let all = triggers.map(\.action) + chordRules.map(\.action)
+            + keyActionRules.flatMap(\.actions) + complexRules.flatMap(\.tapActions)
+        return all.filter {
+            switch $0 {
+            case .runShell, .runAppleScript: true
+            default: false
+            }
+        }.count
+    }
+
     static var sample: Config {
         var c = Config()
         c.triggers = [

@@ -170,6 +170,12 @@ struct SettingsView: View {
                     Button("Reload") { store.load() }
                     Button("Reset to Sample", role: .destructive) { store.config = .sample }
                 }
+                HStack {
+                    Button("Save Settings…") { ConfigBackup.save(store) }
+                    Button("Restore Settings…") { ConfigBackup.restore(store) }
+                }
+                Text("Saves all rules and settings to a file. The language and Launch at login are not included.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
 
             Section("About") {

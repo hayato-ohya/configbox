@@ -83,11 +83,6 @@ struct HIDManagerView: View {
             } header: { Text("Persistence") } footer: {
                 Text("A LaunchAgent re-applies the same hidutil mappings at login. Without it, macOS forgets UserKeyMapping on logout and ConfigBox re-applies it at launch.")
             }
-
-            Section("Why hidutil instead of a virtual HID driver") {
-                Text("Karabiner-Elements ships a DriverKit virtual keyboard (Karabiner-VirtualHIDDevice) that needs a DriverKit entitlement issued by Apple and a notarized system extension. ConfigBox deliberately avoids installing kernel-adjacent code: simple key-to-key mappings go through Apple's own HID remapping property (the same path System Settings uses for modifier keys), per keyboard if you want, while anything needing logic (Mod-Tap keys, shortcuts) runs in a user-space event tap. The trade-off: remaps cannot create new virtual keys that the HID system does not know, and secure input fields receive the HID-level remaps but not the event-tap ones.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
         }
         .formStyle(.grouped)
         .onAppear { refresh() }

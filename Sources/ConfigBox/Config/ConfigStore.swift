@@ -57,13 +57,41 @@ final class ConfigStore: ObservableObject {
     }
 
     func saveNow() {
-        let enc = JSONEncoder()
-        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
         do {
-            try enc.encode(config).write(to: fileURL, options: .atomic)
+            try exportConfig(to: fileURL)
         } catch {
             Log.error("Config save failed: \(error)")
         }
+    }
+
+    func exportConfig(to url: URL) throws {
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try enc.encode(config).write(to: url, options: .atomic)
+    }
+
+    static let preRestoreFileName = "config.before-restore.json"
+
+    /// Reads a saved settings file. `Config` treats every key as optional, so any JSON object would
+    /// decode to an empty config and wipe the rules; a file ConfigBox wrote always has `general`.
+    static func decodeBackup(at url: URL) throws -> Config {
+        let data = try Data(contentsOf: url)
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any], root["general"] is [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        return try JSONDecoder().decode(Config.self, from: data)
+    }
+
+    /// Replaces the settings, keeping a copy of the current ones first so the change can be undone.
+    func replaceConfig(with new: Config) throws {
+        try exportConfig(to: fileURL.deletingLastPathComponent().appendingPathComponent(Self.preRestoreFileName))
+        var c = new
+        Self.normalize(&c)
+        config = c
+        saveNow()
+        // The LaunchAgent is otherwise only updated when its toggle or the mappings change.
+        InputRouter.shared.apply(config: c)
+        if c.general.keepHIDMappingsAtLogin { HIDUtil.writeLaunchAgent() } else { HIDUtil.removeLaunchAgent() }
     }
 
     /// Binding to one element of a config array, looked up by id on every access.

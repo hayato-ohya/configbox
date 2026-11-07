@@ -118,6 +118,8 @@
 "Corner size" = "角の判定サイズ";
 "Corners" = "角";
 "Corners snap to quarters" = "角では画面の 1/4 にスナップ";
+"Could not restore the settings." = "設定を復元できませんでした。";
+"Could not save the settings." = "設定を保存できませんでした。";
 "Create" = "作成";
 "Create a new snap area on the display under the mouse" = "マウスのあるディスプレイに新しいスナップエリアを作成";
 "Custom" = "カスタム";
@@ -193,7 +195,6 @@
 "Installed in the system (hidutil UserKeyMapping)" = "システムに登録済み（hidutil UserKeyMapping）";
 "JIS keyboard as US (ANSI)" = "JIS キーボードを US（ANSI）として使う";
 "Karabiner-Elements is active: device-specific rules cannot see keys from the keyboards it manages. Untick them in Karabiner › Devices, or quit Karabiner." = "Karabiner-Elements が動作中です。Karabiner が管理するキーボードのキーは、デバイス別のルールでは検出できません。Karabiner の Devices でチェックを外すか、Karabiner を終了してください。";
-"Karabiner-Elements ships a DriverKit virtual keyboard (Karabiner-VirtualHIDDevice) that needs a DriverKit entitlement issued by Apple and a notarized system extension. ConfigBox deliberately avoids installing kernel-adjacent code: simple key-to-key mappings go through Apple's own HID remapping property (the same path System Settings uses for modifier keys), per keyboard if you want, while anything needing logic (Mod-Tap keys, shortcuts) runs in a user-space event tap. The trade-off: remaps cannot create new virtual keys that the HID system does not know, and secure input fields receive the HID-level remaps but not the event-tap ones." = "Karabiner-Elements は DriverKit の仮想キーボード（Karabiner-VirtualHIDDevice）を使い、これには Apple が発行する DriverKit の権限と公証済みのシステム機能拡張が必要です。ConfigBox はカーネルに近いコードを意図的にインストールしません。キーからキーへの単純なマッピングは Apple 標準の HID リマップ機能（システム設定の修飾キー変更と同じ経路）を使い、キーボードごとにも設定できます。判断が必要な処理（Mod-Tap キー、ショートカット）はユーザー空間のイベントタップで動きます。その代わり、HID システムが認識しない新しい仮想キーは作れません。また、セキュア入力欄には HID レベルのリマップだけが届き、イベントタップの処理は届きません。";
 "Keep blocking after the fingers lift" = "指を離したあとも止める時間";
 "Keep mappings active at login, even when ConfigBox is not running" = "ConfigBox が起動していなくても、ログイン時にマッピングを有効にする";
 "Keep the system's scrolling in these apps" = "これらのアプリではシステムのスクロールを維持";
@@ -344,6 +345,9 @@
 "Reset Screen Recording entry…" = "画面収録の項目をリセット…";
 "Reset to Sample" = "サンプルにリセット";
 "Restart Engine" = "エンジンを再起動";
+"Restore" = "復元";
+"Restore Settings…" = "設定を復元…";
+"Restore settings from “%@”?" = "「%@」から設定を復元しますか？";
 "Reveal in Finder" = "Finder に表示";
 "Reverse horizontal scrolling (tilt wheel only)" = "横スクロールを反転（チルトホイールのみ）";
 "Reverse trackpad scrolling (trackpad only)" = "トラックパッドのスクロールを反転（トラックパッドのみ）";
@@ -360,6 +364,8 @@
 "Run Shell Script" = "シェルスクリプトを実行";
 "Run actions" = "アクションを実行";
 "Running" = "起動中";
+"Save Settings…" = "設定を保存…";
+"Saves all rules and settings to a file. The language and Launch at login are not included." = "すべてのルールと設定をファイルに保存します。言語とログイン時の起動は含まれません。";
 "Screen Recording" = "画面収録";
 "Scroll %@" = "%@ にスクロール";
 "Scroll speed" = "スクロール速度";
@@ -435,6 +441,7 @@
 "The engine runs only while at least one gesture trigger is enabled (or the Event Viewer’s Trackpad page is open). Tap-to-click, tracking speed and the system’s own gestures live in System Settings; turn off the system gesture that shares a finger count with your triggers to avoid double actions." = "エンジンは、ジェスチャトリガーが1つ以上有効なとき（またはイベントビューアの「トラックパッド」を開いているとき）だけ動作します。タップでクリック、軌跡の速さ、システムのジェスチャはシステム設定にあります。アクションの二重実行を防ぐため、トリガーと指の本数が重なるシステムジェスチャはオフにしてください。";
 "The multitouch framework is not available on this system." = "このシステムではマルチタッチフレームワークを利用できません。";
 "This area only appears while %@ is held during the drag." = "このエリアはドラッグ中に %@ を押している間だけ表示されます。";
+"This file contains %lld shell or AppleScript action(s). They run with your permissions when triggered, so restore it only if you trust its source." = "このファイルにはシェルまたは AppleScript のアクションが %lld 個含まれています。これらは実行時にあなたの権限で動くので、信頼できるファイルの場合だけ復元してください。";
 "Three-finger drag" = "3本指ドラッグ";
 "Threshold" = "しきい値";
 "Thumbnail height" = "サムネイルの高さ";
@@ -471,7 +478,6 @@
 "Volume Up" = "音量を上げる";
 "When pressed" = "押したとき";
 "While editing, **Esc** (or Cancel) discards everything changed in that session, including added or deleted areas; **Return** or Done keeps it." = "編集中に **Esc**（または「キャンセル」）を押すと、エリアの追加や削除を含め、その編集での変更をすべて破棄します。**Return** または「完了」で保存します。";
-"Why hidutil instead of a virtual HID driver" = "仮想 HID ドライバではなく hidutil を使う理由";
 "Window" = "ウィンドウ";
 "Window Frames" = "ウィンドウ枠";
 "Window Management" = "ウィンドウ管理";
@@ -484,6 +490,7 @@
 "Windows" = "ウィンドウ";
 "Windows keyboard on a Mac" = "Mac で Windows キーボードを使う";
 "Yes" = "はい";
+"Your current settings are replaced. A copy of them is kept as %@." = "現在の設定は置き換えられます。現在の設定のコピーは %@ として保存されます。";
 "Zones" = "ゾーン";
 "Zoom Window" = "ウィンドウをズーム";
 "all apps" = "すべてのアプリ";
@@ -506,6 +513,7 @@
 "zsh script" = "zsh スクリプト";
 "¥ → ` ~  and  _ (ろ) → \\ |" = "¥ → ` ~  と  _（ろ）→ \\ |";
 "“%@” (area frame)" = "「%@」（エリアの枠）";
+"“%@” is not a ConfigBox settings file." = "「%@」は ConfigBox の設定ファイルではありません。";
 "“%@” window frame" = "「%@」のウィンドウ枠";
 "“Activate” installs the simple modifications and the F-key routes used by Key → Actions and Mod-Tap rules into the HID event system. “Deactivate” removes exactly what ConfigBox installed." = "「有効にする」は、シンプルな変更と、キー → アクションおよび Mod-Tap ルールが使う予備キーの経路を HID イベントシステムに登録します。「無効にする」は ConfigBox が登録したものだけを削除します。";
 "⚠︎ Accessibility permission required" = "⚠︎ アクセシビリティの許可が必要です";

@@ -312,7 +312,7 @@
 "Open Desktop & Dock Settings…" = "「デスクトップと Dock」設定を開く…";
 "Open Trackpad Settings…" = "トラックパッド設定を開く…";
 "Open URL" = "URL を開く";
-"Optional. Only needed for Simultaneous Keys rules limited to one keyboard." = "任意です。キーボードを限定した同時押しルールにのみ必要です。";
+"Optional. Only needed to tell keyboards apart: for Simultaneous Keys rules limited to one keyboard, and for keyboard-limited Key → Actions rules once the spare keys run out." = "任意。キーボードを見分けるためだけに使います。キーボードを限定した同時押しルールと、予備キーが足りなくなったときのキーボード限定のキー → アクションで必要です。";
 "Optional. Only used for window thumbnails in the switcher." = "任意です。スイッチャーのウィンドウサムネイルにのみ使います。";
 "Other keyboards keep the key unchanged." = "他のキーボードではキーは変更されません。";
 "Path" = "パス";

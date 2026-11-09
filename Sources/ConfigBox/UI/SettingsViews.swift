@@ -103,7 +103,7 @@ struct SettingsView: View {
                     Permissions.requestScreenRecording(); Permissions.openScreenRecordingSettings()
                 }
                 permissionRow("Input Monitoring", granted: inputMonitoring,
-                              detail: "Optional. Only needed for Simultaneous Keys rules limited to one keyboard.") {
+                              detail: "Optional. Only needed to tell keyboards apart: for Simultaneous Keys rules limited to one keyboard, and for keyboard-limited Key → Actions rules once the spare keys run out.") {
                     Permissions.requestInputMonitoring()
                 }
                 if !accessibility || !screenRecording || !inputMonitoring {

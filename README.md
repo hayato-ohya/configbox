@@ -47,7 +47,7 @@ Accessibility / 画面収録の許可はコード署名に紐づきます。ad-h
 
 - **アクセシビリティ**（必須）: キーのリマップ、ショートカット、ウィンドウスイッチャーに使用
 - **画面収録**（任意）: スイッチャーのサムネイル表示のみ。未許可の場合はアプリアイコンを表示
-- **入力監視**（任意）: キーボードを限定した同時押しルールのみ
+- **入力監視**（任意）: キーボードを見分けるためだけに使用。キーボードを限定した同時押しルールと、予備キーが足りなくなったときのキーボード限定のキー → アクション
 
 設定画面の「設定」タブから付与できます。付与後に反応しない場合は一度アプリを再起動してください。
 
@@ -55,6 +55,8 @@ Accessibility / 画面収録の許可はコード署名に紐づきます。ad-h
 
 `~/Library/Application Support/ConfigBox/config.json`。UI の変更は自動保存されます。
 テキストエディタで編集した場合はメニューバーの「設定ファイルを再読み込み」で再読込します。
+
+読めない項目（手作業での編集ミスや、新しい版で追加された種類のルールなど）があっても、その項目だけを飛ばして残りを読み込みます。飛ばした項目は次の保存でファイルから消えるため、読み込み時点のファイルを同じフォルダに `config.json.partial-<日時>` として残し、内容を `~/Library/Logs/ConfigBox.log` に記録します。JSON として壊れている場合はサンプル設定を表示し、元のファイルを `config.json.broken-<日時>` として残します。
 
 「設定 › 設定ファイル」の「設定を保存…」「設定を復元…」でバックアップできます。
 
@@ -76,7 +78,7 @@ Accessibility / 画面収録の許可はコード署名に紐づきます。ad-h
 Sources/CBridge/                 MultitouchSupport（dlopen）と _AXUIElementGetWindow の C ブリッジ
 Sources/ConfigBox/
   App/                           エントリポイント、メニューバー、権限、ウィンドウ管理
-  Config/                        設定モデル（Codable JSON）、キーコード表、言語設定
+  Config/                        設定モデル（Codable JSON）、キーコード表、言語設定、設定の検証
   Engines/Keyboard/              EventTap, InputRouter, KeyRemapper（二役キー）, HIDUtil, KeySynth
   Engines/Trackpad/              マルチタッチフレーム → タップ / スワイプ認識
   Engines/Switcher/              ウィンドウ列挙、スイッチャー制御、オーバーレイ UI
@@ -102,7 +104,9 @@ HID Device Manager はこの層の「有効化 / 無効化 / 状態確認 / デ�
 - 単純置換で修飾キー自体（例: 左 ⌃ 単押しで Esc）を二役にする場合、長押し時は本来の修飾キーとして動きます。
 - 別のスペースにあるウィンドウへの切替は「システム設定 › デスクトップと Dock › アプリケーションの切り替え時に、開いているウィンドウがあるスペースに移動」が有効なときに動作します。
 - HID レベルの単純置換はセキュア入力欄（パスワード欄）でも効きますが、イベントタップで処理する二役キーやショートカットはセキュア入力中は届きません。
-- ウィンドウスナップは「ドラッグ開始後にウィンドウ位置が実際に動いたか」で判定するため、テキスト選択やスクロールバーのドラッグでは発動しません。
+- ウィンドウスナップは「ドラッグ開始後にウィンドウ位置が実際に動いたか」で判定するため、テキスト選択やスクロールバーのドラッグでは発動しません。大きさが変わるドラッグ（ウィンドウのリサイズ）でも発動しません。
+- macOS 15 以降の「システム設定 › デスクトップと Dock › ウインドウ」にある「ウインドウを画面の左端または右端にドラッグしてタイル表示」「ウインドウをメニューバーにドラッグしてフルスクリーン表示」がオンだと、同じドロップに macOS も反応し、次にそのウィンドウをドラッグしたときに元の大きさへ戻されます。スナップを使う場合はオフにしてください（オンのときは「スナップ」タブに警告と設定を開くボタンが出ます）。
+- 動かないショートカット（修飾キー単体など）や、同じキーを取り合うルールは、一覧に警告マークが付き、編集欄に理由が表示されます。保存や実行は止めません。
 - MultitouchSupport は Apple の非公開フレームワークです（BTT 等も同じものを使用）。将来の macOS で利用できなくなった場合はトラックパッド機能のみ無効になります。
 
 ## デバッグ用起動オプション
@@ -158,7 +162,7 @@ A self-signed build is not notarized, so Gatekeeper blocks it if you distribute 
 
 - **Accessibility** (required): key remapping, shortcuts and the window switcher
 - **Screen Recording** (optional): only for thumbnails in the switcher. App icons are shown without it
-- **Input Monitoring** (optional): only for Simultaneous Keys rules limited to one keyboard
+- **Input Monitoring** (optional): only to tell keyboards apart, for Simultaneous Keys rules limited to one keyboard and for keyboard-limited Key → Actions rules once the spare keys run out
 
 You can grant these from the Settings tab. If something does not respond after granting, relaunch the app once.
 
@@ -166,6 +170,8 @@ You can grant these from the Settings tab. If something does not respond after g
 
 `~/Library/Application Support/ConfigBox/config.json`. Changes in the UI are saved automatically.
 After editing it in a text editor, choose Reload Config File in the menu bar.
+
+An entry that cannot be read (a hand edit gone wrong, or a kind of rule added by a newer version) is skipped and the rest is loaded. Skipped entries disappear from the file at the next save, so the file as it was is kept in the same folder as `config.json.partial-<timestamp>` and the details go to `~/Library/Logs/ConfigBox.log`. If the file is not valid JSON at all, the sample configuration is shown and the original is kept as `config.json.broken-<timestamp>`.
 
 Use Save Settings… and Restore Settings… in Settings › Configuration File for backups.
 
@@ -187,7 +193,7 @@ Use Save Settings… and Restore Settings… in Settings › Configuration File 
 Sources/CBridge/                 C bridge for MultitouchSupport (dlopen) and _AXUIElementGetWindow
 Sources/ConfigBox/
   App/                           Entry point, menu bar, permissions, window management
-  Config/                        Settings model (Codable JSON), key code table, language setting
+  Config/                        Settings model (Codable JSON), key code table, language setting, validation
   Engines/Keyboard/              EventTap, InputRouter, KeyRemapper (dual-role keys), HIDUtil, KeySynth
   Engines/Trackpad/              Multitouch frames → tap, click and swipe recognition
   Engines/Switcher/              Window enumeration, switcher control, overlay UI
@@ -213,7 +219,9 @@ HID Device Manager activates, deactivates, inspects, applies per device and pers
 - When a modifier itself is made dual-role (for example left ⌃ alone for Esc), it acts as the normal modifier when held.
 - Switching to a window in another Space works when System Settings › Desktop & Dock › "When switching to an application, switch to a Space with open windows for the application" is on.
 - HID-level simple remaps work in secure input fields (password fields), but dual-role keys and shortcuts handled in the event tap do not reach them during secure input.
-- Window snapping checks whether the window actually moved after the drag started, so selecting text or dragging a scroll bar does not trigger it.
+- Window snapping checks whether the window actually moved after the drag started, so selecting text or dragging a scroll bar does not trigger it. Neither does a drag that changes the window's size (resizing it).
+- On macOS 15 and later, with "Drag windows to left or right edge of screen to tile" or "Drag windows to menu bar to fill screen" on in System Settings › Desktop & Dock › Windows, macOS acts on the same drop too and puts the window back to its previous size the next time you drag it. Turn them off when you use snapping (while one is on, the Snapping tab shows a warning with a button that opens those settings).
+- Shortcuts that cannot fire (such as a modifier key on its own) and rules that compete for the same key get a warning mark in the list and an explanation in the editor. Nothing is blocked from being saved or run.
 - MultitouchSupport is a private Apple framework (BTT and others use it too). If a future macOS removes it, only the trackpad features are disabled.
 
 ## Debug launch options

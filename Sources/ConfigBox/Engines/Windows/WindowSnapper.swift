@@ -83,6 +83,9 @@ final class WindowSnapper {
     private var dragStart: CGPoint?
     /// When the first lookup of the dragged window failed during this drag; retries stop shortly after.
     private var firstMiss: CFAbsoluteTime?
+    /// Counts left-button presses. A drop keeps re-applying its frame for a moment; a press after it means
+    /// the user is already doing something else with the window, so the re-applying stops.
+    private var pressCount = 0
     private var currentZone: Zone?
     private var target: CGRect?      // AppKit coordinates
     private var preview: SnapPreviewPanel?
@@ -96,6 +99,7 @@ final class WindowSnapper {
         switch type {
         case .leftMouseDown:
             dragStart = event.location
+            pressCount &+= 1
             state = .idle
             firstMiss = nil
             currentZone = nil
@@ -172,7 +176,12 @@ final class WindowSnapper {
                 // macOS's own edge tiling (and some apps) may re-tile the window right after the drop.
                 // Apply, then re-check a few times and put the window back where the user asked.
                 var attempt = 0
+                let press = pressCount
                 func enforce() {
+                    guard press == self.pressCount else {
+                        Log.debug("snapper: stopped re-applying the frame (the mouse was pressed again)")
+                        return
+                    }
                     let current = AX.frame(of: w)
                     let off = current.map { abs($0.minX - ax.minX) > 2 || abs($0.minY - ax.minY) > 2 || abs($0.width - ax.width) > 2 || abs($0.height - ax.height) > 2 } ?? true
                     if attempt == 0 || off { AX.setFrame(w, ax) }

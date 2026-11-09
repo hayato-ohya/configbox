@@ -47,6 +47,8 @@ enum AX {
             setPoint(window, kAXPositionAttribute, r.origin)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            // A held mouse button means the user is already dragging or resizing the window: leave it alone.
+            guard !CGEventSource.buttonState(.combinedSessionState, button: .left) else { return }
             if let later = frame(of: window), !close(later, r) {
                 setPoint(window, kAXPositionAttribute, r.origin)
                 setSize(window, kAXSizeAttribute, r.size)

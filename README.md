@@ -121,7 +121,7 @@ Instead of keeping three third-party binaries running, you run a single executab
 
 | Replaces | How ConfigBox does it |
 |---|---|
-| BetterTouchTool | N-finger trackpad taps and swipes, mouse triggers (button clicks, modifier + scroll, button gestures) and keyboard shortcuts run actions such as window tiling, launching apps, media keys, and shell or AppleScript scripts |
+| BetterTouchTool | N-finger trackpad taps, clicks and swipes, mouse triggers (button clicks, modifier + scroll, button gestures) and keyboard shortcuts run actions such as window tiling, launching apps, media keys, and shell or AppleScript scripts |
 | Karabiner-Elements | Simple key remaps use macOS's own `hidutil` (no resident cost, per device if you like). Mod-Tap keys (tap for Esc, hold for ⌃, per device if you like), simultaneous keys (J + K → any action) and key macros (one key → several keys, text or actions, per device if you like) are handled in a CGEventTap |
 | AltTab | A per-window switcher on ⌥Tab, with thumbnails (ScreenCaptureKit), minimized and hidden windows, and W / M / H / Q to act on windows |
 | BTT window snapping | Drag a window to a screen edge or corner to see a translucent preview, then release to tile it to a half, a quarter or full size. Edges shared with another display can be ignored, and snapping can require a modifier |
@@ -189,7 +189,7 @@ Sources/ConfigBox/
   App/                           Entry point, menu bar, permissions, window management
   Config/                        Settings model (Codable JSON), key code table, language setting
   Engines/Keyboard/              EventTap, InputRouter, KeyRemapper (dual-role keys), HIDUtil, KeySynth
-  Engines/Trackpad/              Multitouch frames → tap and swipe recognition
+  Engines/Trackpad/              Multitouch frames → tap, click and swipe recognition
   Engines/Switcher/              Window enumeration, switcher control, overlay UI
   Engines/Windows/               Window snapping by dragging, and its preview
   Engines/Viewer/                Event recording for Event Viewer (only while it is open)

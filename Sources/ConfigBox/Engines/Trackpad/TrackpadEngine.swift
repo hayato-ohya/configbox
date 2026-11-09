@@ -3,12 +3,17 @@ import CoreGraphics
 import CBridge
 
 /// Reads raw multitouch frames from the private MultitouchSupport framework and recognizes
-/// N-finger taps and swipes. System gestures that macOS itself handles still happen; disable the
+/// N-finger taps, clicks and swipes. System gestures that macOS itself handles still happen; disable the
 /// overlapping ones in System Settings > Trackpad if you remap them here.
 final class TrackpadEngine {
     static let shared = TrackpadEngine()
 
     var onGesture: ((Gesture) -> Void)?
+    /// Asked on the event tap (main thread) when the trackpad is pressed with N fingers: true = a trigger
+    /// took the click, so the button events are swallowed.
+    var onClick: ((Gesture) -> Bool)?
+    /// Finger counts (≥ 2) for which a click trigger exists; other clicks are never looked at.
+    var clickFingerCounts: Set<Int> = []
     var swipeThreshold: Float = 0.10
     var tapMaxDuration: Double = 0.25
     var suppressScroll = true
@@ -38,6 +43,9 @@ final class TrackpadEngine {
     private var startCentroid = MTPoint(x: 0, y: 0)
     private var startTime: Double = 0
     private var done = false
+    private var touching = 0                             // fingers down in the latest frame (read on the main thread)
+    private var clickedInSequence = false                // a click trigger fired: no tap / swipe for this touch sequence
+    private var swallowUntilUp: CGEventType?             // main thread: mouse-up type that ends a taken click
 
     private init() {}
 
@@ -91,6 +99,7 @@ final class TrackpadEngine {
             cx += t.normalized.pos.x
             cy += t.normalized.pos.y
         }
+        touching = n
         if EventMonitor.shared.trackpadViewerActive {
             EventMonitor.shared.publish(touches: touches.filter { $0.state >= 2 && $0.state <= 5 }.map {
                 TouchPoint(id: Int($0.identifier), x: CGFloat($0.normalized.pos.x), y: CGFloat($0.normalized.pos.y),
@@ -99,7 +108,7 @@ final class TrackpadEngine {
         }
 
         if n == 0 {
-            if maxFingers >= 2 && !done {
+            if maxFingers >= 2 && !done && !clickedInSequence {
                 let dur = timestamp - startTime
                 if dur < tapMaxDuration { emit(Gesture(fingers: maxFingers, kind: .tap)) }
             }
@@ -107,6 +116,7 @@ final class TrackpadEngine {
             blockingSequence = false
             maxFingers = 0
             done = false
+            clickedInSequence = false
             return
         }
         if suppressScroll && n >= 3 && configuredFingerCounts.contains(n) { blockingSequence = true }
@@ -126,7 +136,7 @@ final class TrackpadEngine {
             if timestamp - startTime >= tapMaxDuration { done = true }
             return
         }
-        guard !done, n >= 2 else { return }
+        guard !done, !clickedInSequence, n >= 2 else { return }
 
         let dx = c.x - startCentroid.x, dy = c.y - startCentroid.y
         let dist = (dx * dx + dy * dy).squareRoot()
@@ -139,6 +149,30 @@ final class TrackpadEngine {
             emit(Gesture(fingers: n, kind: kind))
         } else if timestamp - startTime > tapMaxDuration && dist < 0.02 {
             // Held still for too long: neither a tap nor a swipe candidate anymore? Keep waiting for a swipe.
+        }
+    }
+
+    /// Called from the event tap for every left / right button event: true = swallow it.
+    /// A physical click (or a tap-to-click) made while N fingers rest on the trackpad becomes an N-finger click
+    /// gesture when a trigger wants it; the matching drags and mouse-up are swallowed too.
+    func handleClick(_ type: CGEventType, _ e: CGEvent) -> Bool {
+        switch type {
+        case .leftMouseDown, .rightMouseDown:
+            if swallowUntilUp != nil { return true }
+            let n = touching
+            guard isRunning, n >= 2, clickFingerCounts.contains(n), let onClick,
+                  onClick(Gesture(fingers: n, kind: .click)) else { return false }
+            clickedInSequence = true
+            swallowUntilUp = type == .leftMouseDown ? .leftMouseUp : .rightMouseUp
+            return true
+        case .leftMouseDragged, .rightMouseDragged:
+            return swallowUntilUp != nil
+        case .leftMouseUp, .rightMouseUp:
+            guard let up = swallowUntilUp else { return false }
+            if up == type { swallowUntilUp = nil }
+            return true
+        default:
+            return false
         }
     }
 

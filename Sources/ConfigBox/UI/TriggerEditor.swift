@@ -50,7 +50,7 @@ struct GestureEditor: View {
         Picker("Gesture", selection: $gesture.kind) {
             ForEach(GestureKind.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
         }
-        if gesture.fingers == 2 || (gesture.kind != .tap && gesture.fingers >= 3) {
+        if gesture.fingers == 2 || (gesture.kind != .tap && gesture.kind != .click && gesture.fingers >= 3) {
             Text("macOS handles this gesture itself too. Disable the overlapping system gesture in System Settings › Trackpad to avoid double actions.")
                 .font(.caption).foregroundStyle(.secondary)
         }

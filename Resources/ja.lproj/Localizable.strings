@@ -433,6 +433,7 @@
 "System default" = "システムのデフォルト";
 "System: %@. Both will fire; turn the system gesture off or use another finger count." = "システム: %@。両方が実行されます。システムのジェスチャをオフにするか、別の指の本数を使ってください。";
 "Tap" = "タップ";
+"Click" = "クリック";
 "Tap for a key or an action sequence, hold for modifiers (QMK Mod-Tap / Karabiner to_if_alone)." = "タップでキーまたはアクションを実行し、押し続けると修飾キーとして働きます（QMK の Mod-Tap / Karabiner の to_if_alone）。";
 "Tap: %@" = "タップ: %@";
 "Tapping term" = "タップ判定時間";

@@ -74,11 +74,12 @@ struct KeyCombo: Codable, Hashable {
 }
 
 enum GestureKind: String, Codable, CaseIterable, Identifiable {
-    case tap, swipeUp, swipeDown, swipeLeft, swipeRight
+    case tap, click, swipeUp, swipeDown, swipeLeft, swipeRight
     var id: String { rawValue }
     var title: String {
         switch self {
         case .tap: L("Tap")
+        case .click: L("Click")
         case .swipeUp: L("Swipe Up")
         case .swipeDown: L("Swipe Down")
         case .swipeLeft: L("Swipe Left")
@@ -88,6 +89,7 @@ enum GestureKind: String, Codable, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .tap: L("hand.tap")
+        case .click: "cursorarrow.click"
         case .swipeUp: "arrow.up"
         case .swipeDown: "arrow.down"
         case .swipeLeft: "arrow.left"

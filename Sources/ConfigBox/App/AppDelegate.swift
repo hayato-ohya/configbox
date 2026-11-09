@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         InputRouter.shared.start()
         TrackpadEngine.shared.onGesture = { [weak self] g in self?.handle(gesture: g) }
+        TrackpadEngine.shared.onClick = { [weak self] g in self?.handleClick(gesture: g) ?? false }
 
         NotificationCenter.default.addObserver(forName: .configBoxReconcile, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
@@ -118,6 +119,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard t.enabled, cfg.general.trackpadEnabled, case .gesture(let g) = t.kind, g.fingers >= 3 else { return nil }
             return g.fingers
         })
+        tp.clickFingerCounts = Set(cfg.triggers.compactMap { t -> Int? in
+            guard t.enabled, cfg.general.trackpadEnabled, case .gesture(let g) = t.kind, g.kind == .click else { return nil }
+            return g.fingers
+        })
         let wantsTrackpad = (cfg.general.trackpadEnabled && cfg.triggers.contains { $0.enabled && $0.kind.isGesture })
             || EventMonitor.shared.trackpadViewerActive
         if wantsTrackpad && !tp.isRunning { tp.start() }
@@ -126,17 +131,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handle(gesture: Gesture) {
         guard store.config.general.trackpadEnabled else { EventMonitor.shared.record(gesture: gesture, handled: false); return }
+        let match = trigger(for: gesture)
+        EventMonitor.shared.record(gesture: gesture, handled: match != nil)
+        if let match { ActionRunner.run(match.action) }
+    }
+
+    /// Runs on the event tap: only a click some trigger (for the frontmost app) wants is taken from the system.
+    private func handleClick(gesture: Gesture) -> Bool {
+        guard store.config.general.trackpadEnabled, let match = trigger(for: gesture) else { return false }
+        EventMonitor.shared.record(gesture: gesture, handled: true)
+        let action = match.action
+        DispatchQueue.main.async { ActionRunner.run(action) }
+        return true
+    }
+
+    private func trigger(for gesture: Gesture) -> Trigger? {
         let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         var match: Trigger?
         for t in store.config.triggers where t.enabled {
             guard case .gesture(let g) = t.kind, g == gesture else { continue }
             if let app = t.appBundleId {
-                if app == front { match = t; break }
+                if app == front { return t }
             } else if match == nil {
                 match = t
             }
         }
-        EventMonitor.shared.record(gesture: gesture, handled: match != nil)
-        if let match { ActionRunner.run(match.action) }
+        return match
     }
 }

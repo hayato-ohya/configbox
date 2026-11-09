@@ -51,6 +51,7 @@ final class InputRouter {
         if KeySynth.isSynthetic(event) { return event }
         switch type {
         case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
+            if !recording && TrackpadEngine.shared.handleClick(type, event) { return nil }
             if !recording && MouseEngine.shared.handle(type, event) { return nil }
             WindowSnapper.shared.handle(type, event)
             return event
@@ -59,6 +60,7 @@ final class InputRouter {
             if !recording && MouseEngine.shared.handle(type, event) { return nil }
             return ScrollProcessor.shared.process(event)
         case .rightMouseDown, .rightMouseDragged, .rightMouseUp, .otherMouseDown, .otherMouseDragged, .otherMouseUp:
+            if !recording && TrackpadEngine.shared.handleClick(type, event) { return nil }
             if !recording && MouseEngine.shared.handle(type, event) { return nil }
             return event
         default:

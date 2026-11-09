@@ -194,6 +194,7 @@
 "Input Monitoring" = "入力監視";
 "Installed" = "インストール済み";
 "Installed in the system (hidutil UserKeyMapping)" = "システムに登録済み（hidutil UserKeyMapping）";
+"Its %lld trigger(s) are deleted too. This cannot be undone." = "このアプリ専用のトリガー %lld 個も削除されます。この操作は取り消せません。";
 "JIS keyboard as US (ANSI)" = "JIS キーボードを US（ANSI）として使う";
 "Karabiner-Elements is active: device-specific rules cannot see keys from the keyboards it manages. Untick them in Karabiner › Devices, or quit Karabiner." = "Karabiner-Elements が動作中です。Karabiner が管理するキーボードのキーは、デバイス別のルールでは検出できません。Karabiner の Devices でチェックを外すか、Karabiner を終了してください。";
 "Keep blocking after the fingers lift" = "指を離したあとも止める時間";
@@ -338,6 +339,7 @@
 "Reload Config File" = "設定ファイルを再読み込み";
 "Remapping" = "リマップ";
 "Remove" = "削除";
+"Remove “%@” from the app list?" = "「%@」をアプリ一覧から削除しますか？";
 "Remove all HID mappings (including other tools’)" = "すべての HID マッピングを削除（他のツールの分も含む）";
 "Remove selected" = "選択項目を削除";
 "Remove step" = "ステップを削除";

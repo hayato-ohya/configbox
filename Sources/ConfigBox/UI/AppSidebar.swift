@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct AppSidebar: View {
     @EnvironmentObject var store: ConfigStore
@@ -58,6 +59,17 @@ struct AppSidebar: View {
     private func remove() {
         guard !selection.isEmpty else { return }
         let id = selection
+        let count = store.config.triggers.filter { $0.appBundleId == id }.count
+        if count > 0 {
+            // The app's triggers go with it and there is no undo: ask first.
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = L("Remove “%@” from the app list?", store.config.apps.first { $0.bundleId == id }?.name ?? id)
+            alert.informativeText = L("Its %lld trigger(s) are deleted too. This cannot be undone.", count)
+            alert.addButton(withTitle: L("Remove"))
+            alert.addButton(withTitle: L("Cancel"))
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
         store.config.apps.removeAll { $0.bundleId == id }
         store.config.triggers.removeAll { $0.appBundleId == id }
         selection = ""

@@ -17,6 +17,9 @@ final class PointerSettings {
 
     private var client: UnsafeMutableRawPointer?
     private var originals: [String: (res: CFTypeRef?, acc: CFTypeRef?)] = [:]
+    /// Client-wide HIDMouseAcceleration as it was before the first change (nil = it was not set).
+    private var originalClientAcceleration: CFTypeRef?
+    private var clientAccelerationSaved = false
     private var manager: IOHIDManager?
     private var current = MouseSettings()
     private(set) var lastError: String?
@@ -48,6 +51,18 @@ final class PointerSettings {
             if let a = o.acc { cb_hid_service_set_property(s, keyAcceleration, a) }
         }
         originals = [:]
+        restoreClientAcceleration()
+    }
+
+    /// Puts the client-wide mouse acceleration back to what it was before ConfigBox changed it.
+    private func restoreClientAcceleration() {
+        guard clientAccelerationSaved, let client else { return }
+        clientAccelerationSaved = false
+        // Never set before: fall back to the System Settings slider value, or the macOS default.
+        let scaling = (UserDefaults.standard.object(forKey: "com.apple.mouse.scaling") as? NSNumber)?.doubleValue ?? 0.6875
+        let value: CFTypeRef = originalClientAcceleration ?? NSNumber(value: Int(scaling * 65536))
+        cb_hid_client_set_property(client, keyMouseAcceleration, value)
+        originalClientAcceleration = nil
     }
 
     /// Current values of every connected mouse (for the settings UI).
@@ -123,10 +138,15 @@ final class PointerSettings {
             }
         }
         // Client-wide mouse acceleration (what System Settings' slider writes).
-        switch current.acceleration {
-        case .off: cb_hid_client_set_property(client, keyMouseAcceleration, NSNumber(value: -65536))
-        case .custom: cb_hid_client_set_property(client, keyMouseAcceleration, NSNumber(value: Int(current.accelerationValue * 65536)))
-        case .system: break
+        if current.acceleration == .system {
+            restoreClientAcceleration()
+        } else {
+            if !clientAccelerationSaved {
+                originalClientAcceleration = cb_hid_client_copy_property(client, keyMouseAcceleration)
+                clientAccelerationSaved = true
+            }
+            let value = current.acceleration == .off ? -65536 : Int(current.accelerationValue * 65536)
+            cb_hid_client_set_property(client, keyMouseAcceleration, NSNumber(value: value))
         }
         lastError = total == 0 ? "No external mouse connected" : nil
         Log.info("pointer settings applied to \(total) mouse service(s) (speed ok on \(okCount))")

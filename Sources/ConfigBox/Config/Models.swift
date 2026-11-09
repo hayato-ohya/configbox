@@ -603,8 +603,11 @@ struct MouseSettings: Codable {
     /// Bundle identifiers whose windows keep the system's scrolling (no reversal / speed / smoothing).
     /// Judged by the window under the pointer, not the frontmost app.
     var scrollExcludedApps: [String] = MouseSettings.defaultScrollExclusions
+    /// iPhone Mirroring ignores edits to scroll events, so it gets its own settings (see ScrollProcessor).
+    var iPhoneMirroringReverse = true
+    var iPhoneMirroringSpeed: Double = 1.0
 
-    static let defaultScrollExclusions = ["com.apple.ScreenContinuity"]   // iPhone Mirroring (touch-style scrolling)
+    static let defaultScrollExclusions: [String] = []
 
     init() {}
     init(from decoder: Decoder) throws {
@@ -620,6 +623,8 @@ struct MouseSettings: Codable {
         acceleration = try c.decodeIfPresent(AccelerationMode.self, forKey: .acceleration) ?? acceleration
         accelerationValue = try c.decodeIfPresent(Double.self, forKey: .accelerationValue) ?? accelerationValue
         backForwardButtons = try c.decodeIfPresent(Bool.self, forKey: .backForwardButtons) ?? backForwardButtons
+        iPhoneMirroringReverse = try c.decodeIfPresent(Bool.self, forKey: .iPhoneMirroringReverse) ?? iPhoneMirroringReverse
+        iPhoneMirroringSpeed = try c.decodeIfPresent(Double.self, forKey: .iPhoneMirroringSpeed) ?? iPhoneMirroringSpeed
     }
 
     var scrollActive: Bool { reverseVertical || reverseHorizontal || scrollSpeed != 1 || smoothScrolling || shiftScrollsHorizontally }

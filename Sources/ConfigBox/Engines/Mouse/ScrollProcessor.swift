@@ -7,6 +7,7 @@ import Foundation
 final class ScrollProcessor {
     static let shared = ScrollProcessor()
     var settings = MouseSettings()
+    var mouseEnabled = true
     var trackpadReverse = false
     var trackpadSpeed: Double = 1.0
     private var smoothWork: [DispatchWorkItem] = []
@@ -28,22 +29,15 @@ final class ScrollProcessor {
             }
             return e
         }
-        guard settings.scrollActive else { return e }
-        if !settings.scrollExcludedApps.isEmpty, let app = appUnderPointer(e.location), settings.scrollExcludedApps.contains(app) {
+        guard mouseEnabled else { return e }
+        let app = appUnderPointer(e.location)
+        if let app, settings.scrollExcludedApps.contains(app) {
             return e   // this window keeps the system's own scrolling
         }
+        if app == Self.iPhoneMirroring { return processIPhoneMirroring(e) }
+        guard settings.scrollActive else { return e }
 
-        var v = e.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)   // lines (fixed point)
-        var h = e.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2)
-        if v == 0 && h == 0 {
-            v = Double(e.getIntegerValueField(.scrollWheelEventDeltaAxis1))
-            h = Double(e.getIntegerValueField(.scrollWheelEventDeltaAxis2))
-        }
-        let flags = e.flags
-        if settings.shiftScrollsHorizontally, flags.contains(.maskShift), h == 0, v != 0 {
-            h = v; v = 0
-            e.flags = flags.subtracting(.maskShift)
-        }
+        var (v, h) = deltas(e)
         if settings.reverseVertical { v = -v }
         if settings.reverseHorizontal { h = -h }
         v *= settings.scrollSpeed
@@ -55,6 +49,42 @@ final class ScrollProcessor {
         }
         write(e, v: v, h: h)
         return e
+    }
+
+    /// Wheel deltas in lines, with Shift + wheel turned horizontal when that option is on.
+    private func deltas(_ e: CGEvent) -> (v: Double, h: Double) {
+        var v = e.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)   // lines (fixed point)
+        var h = e.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2)
+        if v == 0 && h == 0 {
+            v = Double(e.getIntegerValueField(.scrollWheelEventDeltaAxis1))
+            h = Double(e.getIntegerValueField(.scrollWheelEventDeltaAxis2))
+        }
+        let flags = e.flags
+        if settings.shiftScrollsHorizontally, flags.contains(.maskShift), h == 0, v != 0 {
+            h = v; v = 0
+            e.flags = flags.subtracting(.maskShift)
+        }
+        return (v, h)
+    }
+
+    // MARK: iPhone Mirroring
+
+    private static let iPhoneMirroring = "com.apple.ScreenContinuity"
+    /// A pixel burst moves iPhone Mirroring less than a real wheel notch; this makes speed 1× feel right.
+    private static let iPhoneMirroringBoost = 1.5
+
+    /// iPhone Mirroring reads the HID event attached to a scroll event and ignores edited delta fields, and a
+    /// fresh line-based event barely moves it. So it has its own reverse / speed settings, delivered as a phased
+    /// pixel burst (what smooth scrolling sends), which it turns into a swipe. Reverse off at 1× passes the
+    /// wheel through untouched.
+    private func processIPhoneMirroring(_ e: CGEvent) -> CGEvent? {
+        let reverse = settings.iPhoneMirroringReverse, speed = settings.iPhoneMirroringSpeed
+        guard reverse || speed != 1 else { return e }
+        var (v, h) = deltas(e)
+        if reverse { v = -v; h = -h }
+        let f = speed * Self.iPhoneMirroringBoost
+        smooth(v: v * f, h: h * f, at: e.location, flags: e.flags)
+        return nil
     }
 
     /// Bundle identifier of the app owning the topmost normal window under the pointer (cached ~150 ms).

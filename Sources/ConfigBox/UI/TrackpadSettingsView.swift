@@ -54,7 +54,7 @@ struct TrackpadSettingsView: View {
                     }
                 }
             } header: { Text("Scrolling") } footer: {
-                Text("Blocking only applies to finger counts that have a gesture trigger; two-finger scrolling is never touched. Reverse / speed here affect the trackpad and the Magic Mouse surface; the Mouse tab has the same controls for mouse wheels, and the Mouse tab’s excluded apps (e.g. iPhone Mirroring) are honoured here too.")
+                Text("Blocking only applies to finger counts that have a gesture trigger; two-finger scrolling is never touched. Reverse / speed here affect the trackpad and the Magic Mouse surface; the Mouse tab has the same controls for mouse wheels, and the Mouse tab’s excluded apps are honoured here too.")
             }
 
             Section {

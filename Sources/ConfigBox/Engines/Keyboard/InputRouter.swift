@@ -45,6 +45,7 @@ final class InputRouter {
         MouseEngine.shared.apply(triggers: config.general.mouseEnabled ? config.triggers : [])
         MouseEngine.shared.backForwardButtons = config.general.mouseEnabled && config.mouse.backForwardButtons
         ScrollProcessor.shared.settings = config.general.mouseEnabled ? config.mouse : MouseSettings()
+        ScrollProcessor.shared.mouseEnabled = config.general.mouseEnabled
         ScrollProcessor.shared.trackpadReverse = config.general.trackpadEnabled && config.general.trackpadReverseScroll
         ScrollProcessor.shared.trackpadSpeed = config.general.trackpadEnabled ? config.general.trackpadScrollSpeed : 1.0
         PointerSettings.shared.apply(config.general.mouseEnabled ? config.mouse : MouseSettings())

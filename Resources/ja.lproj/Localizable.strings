@@ -57,7 +57,7 @@
 "Appearance" = "外観";
 "Application Windows (App Exposé)" = "アプリケーションウィンドウ（App Exposé）";
 "Applied through hidutil at the HID level, exactly like System Settings' modifier-key mapping: no runtime cost and it even works in secure input fields." = "システム設定の修飾キー変更と同じく、hidutil で HID レベルに適用します。実行時の負荷はなく、セキュア入力欄でも動作します。";
-"Applies to discrete mouse wheels only. Trackpads and the Magic Mouse surface keep the system's own direction and speed, so you can have “natural” scrolling on the trackpad and classic scrolling on a mouse at the same time. Excluded apps are matched by the window under the pointer, so iPhone Mirroring (touch-style scrolling) stays correct even when it is not the frontmost app." = "段階的に回るマウスホイールだけに適用されます。トラックパッドと Magic Mouse の表面はシステムの方向と速度のままなので、トラックパッドは「ナチュラル」、マウスは従来の方向にできます。除外アプリはポインタの下にあるウィンドウで判定するため、iPhone ミラーリング（タッチ式のスクロール）は最前面でなくても正しく動きます。";
+"Applies to discrete mouse wheels only. Trackpads and the Magic Mouse surface keep the system's own direction and speed, so you can have “natural” scrolling on the trackpad and classic scrolling on a mouse at the same time. Excluded apps are matched by the window under the pointer, not the frontmost app." = "段階的に回るマウスホイールだけに適用されます。トラックパッドと Magic Mouse の表面はシステムの方向と速度のままなので、トラックパッドは「ナチュラル」、マウスは従来の方向にできます。除外アプリは最前面のアプリではなく、ポインタの下にあるウィンドウで判定します。";
 "Area opacity" = "エリアの不透明度";
 "Arrange any window as it should appear after dropping, then press Attach" = "ドロップ後の形に任意のウィンドウを整えて、「割り当て」を押します";
 "Attach" = "割り当て";
@@ -66,7 +66,7 @@
 "Attached window" = "割り当てたウィンドウ";
 "Attached window frame" = "割り当て済みのウィンドウ枠";
 "Block scrolling while 3+ fingers are down (BTT-style)" = "3本指以上が触れている間はスクロールを止める（BTT 方式）";
-"Blocking only applies to finger counts that have a gesture trigger; two-finger scrolling is never touched. Reverse / speed here affect the trackpad and the Magic Mouse surface; the Mouse tab has the same controls for mouse wheels, and the Mouse tab’s excluded apps (e.g. iPhone Mirroring) are honoured here too." = "スクロールを止めるのは、ジェスチャトリガーのある指の本数だけです。2本指スクロールには影響しません。ここの反転と速度はトラックパッドと Magic Mouse の表面に効きます。マウスホイール用の同じ設定は「マウス」タブにあり、そこの除外アプリ（iPhone ミラーリングなど）はここにも適用されます。";
+"Blocking only applies to finger counts that have a gesture trigger; two-finger scrolling is never touched. Reverse / speed here affect the trackpad and the Magic Mouse surface; the Mouse tab has the same controls for mouse wheels, and the Mouse tab’s excluded apps are honoured here too." = "スクロールを止めるのは、ジェスチャトリガーのある指の本数だけです。2本指スクロールには影響しません。ここの反転と速度はトラックパッドと Magic Mouse の表面に効きます。マウスホイール用の同じ設定は「マウス」タブにあり、そこの除外アプリはここにも適用されます。";
 "Border width" = "枠線の太さ";
 "Bottom" = "下";
 "Bottom Half" = "下半分";
@@ -523,3 +523,5 @@
 "“Activate” installs the simple modifications and the F-key routes used by Key → Actions and Mod-Tap rules into the HID event system. “Deactivate” removes exactly what ConfigBox installed." = "「有効にする」は、シンプルな変更と、キー → アクションおよび Mod-Tap ルールが使う予備キーの経路を HID イベントシステムに登録します。「無効にする」は ConfigBox が登録したものだけを削除します。";
 "⚠︎ Accessibility permission required" = "⚠︎ アクセシビリティの許可が必要です";
 "無変換 → 英数, 変換 → かな" = "無変換 → 英数、変換 → かな";
+"Reverse scrolling direction" = "スクロールの向きを反転";
+"iPhone Mirroring ignores the scrolling settings above, so it has its own. They apply to the mouse wheel while the pointer is over the iPhone Mirroring window. With reversing off and speed at 1×, the wheel is passed through unchanged (macOS's own direction and speed)." = "iPhone ミラーリングには上のスクロール設定が効かないため、専用の設定を用意しています。ポインタが iPhone ミラーリングのウィンドウ上にあるときのマウスホイールに適用されます。反転をオフ、速度を 1× にすると、ホイールはそのまま渡されます（macOS 本来の向きと速度）。";

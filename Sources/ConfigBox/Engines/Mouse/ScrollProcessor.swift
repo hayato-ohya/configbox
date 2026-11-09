@@ -21,12 +21,15 @@ final class ScrollProcessor {
             guard trackpadReverse || trackpadSpeed != 1 else { return e }
             if !settings.scrollExcludedApps.isEmpty, let app = appUnderPointer(e.location), settings.scrollExcludedApps.contains(app) { return e }
             let f = (trackpadReverse ? -1.0 : 1.0) * trackpadSpeed
-            for key in [CGEventField.scrollWheelEventFixedPtDeltaAxis1, .scrollWheelEventFixedPtDeltaAxis2, .scrollWheelEventPointDeltaAxis1, .scrollWheelEventPointDeltaAxis2] {
-                e.setDoubleValueField(key, value: e.getDoubleValueField(key) * f)
-            }
-            for key in [CGEventField.scrollWheelEventDeltaAxis1, .scrollWheelEventDeltaAxis2] {
-                e.setIntegerValueField(key, value: Int64((Double(e.getIntegerValueField(key)) * f).rounded()))
-            }
+            // Writing the integer delta makes macOS recompute the point and fixed-point deltas from it, so
+            // read everything first and write the integer fields before the others.
+            let intKeys: [CGEventField] = [.scrollWheelEventDeltaAxis1, .scrollWheelEventDeltaAxis2]
+            let doubleKeys: [CGEventField] = [.scrollWheelEventPointDeltaAxis1, .scrollWheelEventPointDeltaAxis2,
+                                              .scrollWheelEventFixedPtDeltaAxis1, .scrollWheelEventFixedPtDeltaAxis2]
+            let ints = intKeys.map { Int64((Double(e.getIntegerValueField($0)) * f).rounded()) }
+            let doubles = doubleKeys.map { e.getDoubleValueField($0) * f }
+            for (key, value) in zip(intKeys, ints) { e.setIntegerValueField(key, value: value) }
+            for (key, value) in zip(doubleKeys, doubles) { e.setDoubleValueField(key, value: value) }
             return e
         }
         guard mouseEnabled else { return e }
@@ -108,10 +111,11 @@ final class ScrollProcessor {
     }
 
     private func write(_ e: CGEvent, v: Double, h: Double) {
-        e.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: v)
-        e.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: h)
+        // Integer deltas first: writing them resets the fixed-point and point deltas.
         e.setIntegerValueField(.scrollWheelEventDeltaAxis1, value: Int64(v.rounded(.towardZero) == 0 && v != 0 ? (v > 0 ? 1 : -1) : v.rounded()))
         e.setIntegerValueField(.scrollWheelEventDeltaAxis2, value: Int64(h.rounded(.towardZero) == 0 && h != 0 ? (h > 0 ? 1 : -1) : h.rounded()))
+        e.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: v)
+        e.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: h)
         e.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: v * 10)
         e.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: h * 10)
     }

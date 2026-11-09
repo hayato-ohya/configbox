@@ -39,6 +39,13 @@ final class KeyDeviceTracker {
         }
     }
     private var wanted = false
+    private var owners: Set<String> = []
+
+    /// Runs the tracker while any feature needs it (main thread).
+    func setNeeded(_ needed: Bool, by owner: String) {
+        if needed { owners.insert(owner) } else { owners.remove(owner) }
+        if owners.isEmpty { if wanted { stop() } } else { start() }
+    }
 
     @discardableResult
     func start() -> Bool {

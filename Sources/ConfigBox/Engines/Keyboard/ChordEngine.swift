@@ -16,7 +16,7 @@ final class ChordEngine {
         chordKeys = Set(self.rules.flatMap(\.keys))
         flush()
         consumed = []
-        if self.rules.contains(where: { $0.device != nil }) { KeyDeviceTracker.shared.start() } else { KeyDeviceTracker.shared.stop() }
+        KeyDeviceTracker.shared.setNeeded(self.rules.contains(where: { $0.device != nil }), by: "chords")
     }
 
     /// Rule whose key set equals `held` and whose device (if any) produced every held key.

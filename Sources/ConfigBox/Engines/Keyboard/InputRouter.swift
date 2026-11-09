@@ -138,7 +138,13 @@ final class InputRouter {
         let code = UInt16(truncatingIfNeeded: event.getIntegerValueField(.keyboardEventKeycode))
         guard let candidates = remapper.keyActions[code] else { return nil }
         let mods = KeyCodes.modifiers(for: code, flags: event.flags)
-        return candidates.first { $0.from.modifiers == mods }
+        let window: CFAbsoluteTime = event.type == .keyUp ? 30 : 0.5   // a key up may follow a long hold
+        return candidates.first { m in
+            guard m.from.modifiers == mods else { return false }
+            guard remapper.trackedMacroIDs.contains(m.id), let dev = m.device else { return true }
+            guard let d = KeyDeviceTracker.shared.device(forKeyCode: code, within: window) else { return false }
+            return d.vendorId == dev.vendorId && d.productId == dev.productId
+        }
     }
 
     private func matchTrigger(_ event: CGEvent) -> Trigger? {

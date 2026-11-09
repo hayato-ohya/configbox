@@ -15,6 +15,9 @@ final class KeyRemapper {
     private var holds: [UInt16: Hold] = [:]
     /// Key macros keyed by effective source keycode (possibly a routed F-key).
     private(set) var keyActions: [UInt16: [KeyActionRule]] = [:]
+    /// Keyboard-limited macros that got no routing key: matched on their own key code, with the keyboard
+    /// checked at match time through KeyDeviceTracker (needs Input Monitoring).
+    private(set) var trackedMacroIDs: Set<UUID> = []
 
     /// `reserved`: key codes the tap must still see as themselves (shortcut triggers, chord keys),
     /// so they are never used as routing keys.
@@ -22,6 +25,7 @@ final class KeyRemapper {
         rules = [:]
         holds = [:]
         keyActions = [:]
+        trackedMacroIDs = []
         var hid: [HIDMapping] = []
         var perDevice: [DeviceRef: [HIDMapping]] = [:]
 
@@ -60,10 +64,18 @@ final class KeyRemapper {
         }
 
         // Key macros limited to one keyboard (or on Caps Lock) use the same per-device routing trick.
+        defer { KeyDeviceTracker.shared.setNeeded(!trackedMacroIDs.isEmpty, by: "macros") }
         for m in macros where m.enabled && !m.from.isUnset {
             var src = m.from.keyCode
             if m.device != nil || src == KeyCodes.capsLock || KeyCodes.hidOnly.contains(src) {
                 guard let r = route(src, m.device) else {
+                    if m.device != nil && src != KeyCodes.capsLock && !KeyCodes.hidOnly.contains(src) {
+                        // Out of routing keys, but an ordinary key can still be told apart by its keyboard.
+                        Log.info("No free routing key for macro '\(m.name)': checking its keyboard at match time instead")
+                        trackedMacroIDs.insert(m.id)
+                        keyActions[src, default: []].insert(m, at: 0)   // ahead of all-keyboard macros on the key
+                        continue
+                    }
                     Log.error("No free routing key for macro '\(m.name)'"); unroutable.append(m.name); continue
                 }
                 src = r

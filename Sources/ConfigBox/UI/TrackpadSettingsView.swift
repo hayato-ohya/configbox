@@ -27,6 +27,12 @@ struct TrackpadSettingsView: View {
                 Stepper(value: $store.config.general.tapMaxDurationMs, in: 100...600, step: 25) {
                     LabeledContent("Max tap duration", value: "\(store.config.general.tapMaxDurationMs) ms")
                 }
+                LabeledContent("Max tap movement") {
+                    HStack {
+                        Slider(value: $store.config.general.tapMaxMovement, in: 0.01...0.15, step: 0.005)
+                        Text(String(format: "%.3f", store.config.general.tapMaxMovement)).monospacedDigit().frame(width: 44, alignment: .trailing)
+                    }
+                }
                 Stepper(value: $store.config.general.gestureCooldownMs, in: 0...1000, step: 50) {
                     LabeledContent("Cooldown between gestures", value: "\(store.config.general.gestureCooldownMs) ms")
                 }
@@ -37,7 +43,7 @@ struct TrackpadSettingsView: View {
                     }
                 }
             } header: { Text("Gesture recognition") } footer: {
-                Text("Swipe distance is in normalized trackpad units (1.0 = full width). Direction strictness is how much the main axis must dominate (1 = any diagonal counts, 2 = at least twice the other axis). Touch size is the contact-area value from the multitouch frames; fingertips are usually 1–2.5, palms larger — the Event Viewer’s Trackpad page shows live values.").formFooter()
+                Text("Swipe distance and max tap movement are in normalized trackpad units (1.0 = full width); fingers that move farther than the max tap movement do not count as a tap. Direction strictness is how much the main axis must dominate (1 = any diagonal counts, 2 = at least twice the other axis). Touch size is the contact-area value from the multitouch frames; fingertips are usually 1–2.5, palms larger — the Event Viewer’s Trackpad page shows live values.").formFooter()
             }
 
             Section {

@@ -637,6 +637,7 @@ struct GeneralSettings: Codable {
     var showMenuBarIcon = true
     var swipeThreshold: Double = 0.10   // normalized trackpad units
     var tapMaxDurationMs: Int = 250
+    var tapMaxMovement: Double = 0.04   // normalized trackpad units the fingers may drift during a tap
     var keepHIDMappingsAtLogin = false  // install a LaunchAgent so hidutil mappings survive without ConfigBox
     var treatJISAsANSI = false          // type characters on JIS keyboards with the ANSI table of the input source
     /// After a swipe gesture fired, swallow trackpad scrolling until the fingers are up (+ this many ms),
@@ -659,6 +660,7 @@ struct GeneralSettings: Codable {
         showMenuBarIcon = try c.decodeIfPresent(Bool.self, forKey: .showMenuBarIcon) ?? showMenuBarIcon
         swipeThreshold = try c.decodeIfPresent(Double.self, forKey: .swipeThreshold) ?? swipeThreshold
         tapMaxDurationMs = try c.decodeIfPresent(Int.self, forKey: .tapMaxDurationMs) ?? tapMaxDurationMs
+        tapMaxMovement = try c.decodeIfPresent(Double.self, forKey: .tapMaxMovement) ?? tapMaxMovement
         keepHIDMappingsAtLogin = try c.decodeIfPresent(Bool.self, forKey: .keepHIDMappingsAtLogin) ?? keepHIDMappingsAtLogin
         treatJISAsANSI = try c.decodeIfPresent(Bool.self, forKey: .treatJISAsANSI) ?? treatJISAsANSI
         suppressScrollAfterGesture = try c.decodeIfPresent(Bool.self, forKey: .suppressScrollAfterGesture) ?? suppressScrollAfterGesture

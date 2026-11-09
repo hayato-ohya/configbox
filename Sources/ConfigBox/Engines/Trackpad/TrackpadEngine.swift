@@ -14,6 +14,7 @@ final class TrackpadEngine {
         var onGesture: ((Gesture) -> Void)?
         var swipeThreshold: Float = 0.10
         var tapMaxDuration: Double = 0.25
+        var tapMaxMovement: Float = 0.04
         var suppressScroll = true
         var suppressTail: Double = 0.3
         var cooldown: Double = 0.15
@@ -35,6 +36,8 @@ final class TrackpadEngine {
     var clickFingerCounts: Set<Int> = []
     var swipeThreshold: Float { get { read(\.swipeThreshold) } set { write(\.swipeThreshold, newValue) } }
     var tapMaxDuration: Double { get { read(\.tapMaxDuration) } set { write(\.tapMaxDuration, newValue) } }
+    /// How far the fingers may drift during a tap (normalized units); a quick flick beyond it is no tap.
+    var tapMaxMovement: Float { get { read(\.tapMaxMovement) } set { write(\.tapMaxMovement, newValue) } }
     var suppressScroll: Bool { get { read(\.suppressScroll) } set { write(\.suppressScroll, newValue) } }
     var suppressTail: Double { get { read(\.suppressTail) } set { write(\.suppressTail, newValue) } }
     var cooldown: Double { get { read(\.cooldown) } set { write(\.cooldown, newValue) } }
@@ -77,6 +80,7 @@ final class TrackpadEngine {
     private var startTime: Double = 0                    // last time a finger landed (swipe measurement)
     private var sequenceStart: Double = 0                // first finger of this touch sequence landed
     private var done = false
+    private var maxMove: Float = 0                       // farthest the fingers travelled since the last landing
     private var swallowUntilUp: CGEventType?             // main thread: mouse-up type that ends a taken click
 
     private init() {}
@@ -144,7 +148,9 @@ final class TrackpadEngine {
             if maxFingers >= 2 && !done && !clickedInSequence {
                 // Measured from the last landing and from the first finger of the sequence, so a finger brushing
                 // in at the end of a long scroll is not a tap.
-                if timestamp - startTime < cfg.tapMaxDuration && timestamp - sequenceStart < cfg.tapMaxDuration {
+                // A quick flick that stays below the swipe threshold moved too far to be a tap.
+                if timestamp - startTime < cfg.tapMaxDuration && timestamp - sequenceStart < cfg.tapMaxDuration
+                    && maxMove <= cfg.tapMaxMovement {
                     emit(Gesture(fingers: maxFingers, kind: .tap), cfg)
                 }
             }
@@ -165,6 +171,7 @@ final class TrackpadEngine {
             maxFingers = n
             startCentroid = c
             startTime = timestamp
+            maxMove = 0
             done = false
             return
         }
@@ -173,10 +180,11 @@ final class TrackpadEngine {
             if timestamp - startTime >= cfg.tapMaxDuration { done = true }
             return
         }
-        guard !done, !clickedInSequence, n >= 2 else { return }
-
         let dx = c.x - startCentroid.x, dy = c.y - startCentroid.y
         let dist = (dx * dx + dy * dy).squareRoot()
+        maxMove = max(maxMove, dist)
+        guard !done, !clickedInSequence, n >= 2 else { return }
+
         if dist > cfg.swipeThreshold {
             let major = max(abs(dx), abs(dy)), minor = min(abs(dx), abs(dy))
             guard minor == 0 || major / minor >= cfg.axisRatio else { return }   // too diagonal: keep waiting
@@ -184,8 +192,6 @@ final class TrackpadEngine {
             if abs(dx) > abs(dy) { kind = dx > 0 ? .swipeRight : .swipeLeft } else { kind = dy > 0 ? .swipeUp : .swipeDown }
             done = true
             emit(Gesture(fingers: n, kind: kind), cfg)
-        } else if timestamp - startTime > cfg.tapMaxDuration && dist < 0.02 {
-            // Held still for too long: neither a tap nor a swipe candidate anymore? Keep waiting for a swipe.
         }
     }
 

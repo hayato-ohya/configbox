@@ -235,6 +235,7 @@
 "Manufacturer" = "メーカー";
 "Mapping" = "マッピング";
 "Max tap duration" = "タップの最大時間";
+"Max tap movement" = "タップの最大移動量";
 "Maximize" = "最大化";
 "Middle" = "中央";
 "Middle Click" = "中クリック";
@@ -427,7 +428,7 @@
 "Swipe between full-screen apps / Spaces" = "フルスクリーンアプリ / 操作スペース間をスワイプ";
 "Swipe between pages" = "ページ間をスワイプ";
 "Swipe distance" = "スワイプ距離";
-"Swipe distance is in normalized trackpad units (1.0 = full width). Direction strictness is how much the main axis must dominate (1 = any diagonal counts, 2 = at least twice the other axis). Touch size is the contact-area value from the multitouch frames; fingertips are usually 1–2.5, palms larger — the Event Viewer’s Trackpad page shows live values." = "スワイプ距離はトラックパッド基準の正規化された単位です（1.0 = 全幅）。方向の厳密さは、主な方向がどれだけ優勢であるべきかを示します（1 = 斜めも可、2 = もう一方の軸の2倍以上）。接触サイズはマルチタッチ情報の接触面積の値で、指先は通常 1〜2.5、手のひらはそれ以上です。イベントビューアの「トラックパッド」で実際の値を確認できます。";
+"Swipe distance and max tap movement are in normalized trackpad units (1.0 = full width); fingers that move farther than the max tap movement do not count as a tap. Direction strictness is how much the main axis must dominate (1 = any diagonal counts, 2 = at least twice the other axis). Touch size is the contact-area value from the multitouch frames; fingertips are usually 1–2.5, palms larger — the Event Viewer’s Trackpad page shows live values." = "スワイプ距離とタップの最大移動量はトラックパッド基準の正規化された単位です（1.0 = 全幅）。指がタップの最大移動量より大きく動いた場合はタップとして扱いません。方向の厳密さは、主な方向がどれだけ優勢であるべきかを示します（1 = 斜めも可、2 = もう一方の軸の2倍以上）。接触サイズはマルチタッチ情報の接触面積の値で、指先は通常 1〜2.5、手のひらはそれ以上です。イベントビューアの「トラックパッド」で実際の値を確認できます。";
 "Switch to another app and come back: the values update every 0.5 s. Use the bundle identifier for app-specific triggers." = "別のアプリに切り替えてから戻ってください。値は 0.5 秒ごとに更新されます。アプリ別トリガーにはバンドル ID を使います。";
 "Switch to selected" = "選択中のウィンドウに切り替え";
 "Switcher" = "スイッチャー";

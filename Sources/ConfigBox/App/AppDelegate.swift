@@ -135,6 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let tp = TrackpadEngine.shared
         tp.swipeThreshold = Float(cfg.general.swipeThreshold)
         tp.tapMaxDuration = Double(cfg.general.tapMaxDurationMs) / 1000
+        tp.tapMaxMovement = Float(cfg.general.tapMaxMovement)
         tp.cooldown = Double(cfg.general.gestureCooldownMs) / 1000
         tp.axisRatio = Float(cfg.general.swipeAxisRatio)
         tp.maxTouchSize = Float(cfg.general.maxTouchSize)

@@ -620,7 +620,7 @@ struct MouseSettings: Codable {
         shiftScrollsHorizontally = try c.decodeIfPresent(Bool.self, forKey: .shiftScrollsHorizontally) ?? shiftScrollsHorizontally
         pointerSpeedEnabled = try c.decodeIfPresent(Bool.self, forKey: .pointerSpeedEnabled) ?? pointerSpeedEnabled
         pointerSpeed = try c.decodeIfPresent(Double.self, forKey: .pointerSpeed) ?? pointerSpeed
-        acceleration = try c.decodeIfPresent(AccelerationMode.self, forKey: .acceleration) ?? acceleration
+        acceleration = c.lossy(AccelerationMode.self, forKey: .acceleration, default: acceleration)
         accelerationValue = try c.decodeIfPresent(Double.self, forKey: .accelerationValue) ?? accelerationValue
         backForwardButtons = try c.decodeIfPresent(Bool.self, forKey: .backForwardButtons) ?? backForwardButtons
         iPhoneMirroringReverse = try c.decodeIfPresent(Bool.self, forKey: .iPhoneMirroringReverse) ?? iPhoneMirroringReverse
@@ -689,18 +689,19 @@ struct Config: Codable {
     init() {}
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        general = try c.decodeIfPresent(GeneralSettings.self, forKey: .general) ?? general
-        switcher = try c.decodeIfPresent(SwitcherSettings.self, forKey: .switcher) ?? switcher
-        snapping = try c.decodeIfPresent(SnappingSettings.self, forKey: .snapping) ?? snapping
-        snapAreas = try c.decodeIfPresent([SnapArea].self, forKey: .snapAreas) ?? []
-        mouse = try c.decodeIfPresent(MouseSettings.self, forKey: .mouse) ?? mouse
-        triggers = try c.decodeIfPresent([Trigger].self, forKey: .triggers) ?? []
-        simpleModifications = try c.decodeIfPresent([SimpleModification].self, forKey: .simpleModifications) ?? []
-        complexRules = try c.decodeIfPresent([ComplexRule].self, forKey: .complexRules) ?? []
-        chordRules = try c.decodeIfPresent([ChordRule].self, forKey: .chordRules) ?? []
-        keyActionRules = try c.decodeIfPresent([KeyActionRule].self, forKey: .keyActionRules) ?? []
-        apps = try c.decodeIfPresent([AppRef].self, forKey: .apps) ?? []
-        knownKeyboards = try c.decodeIfPresent([DeviceRef].self, forKey: .knownKeyboards) ?? []
+        // A section or entry that cannot be read is skipped (see LossyDecoding), not the whole file.
+        general = c.lossy(GeneralSettings.self, forKey: .general, default: general)
+        switcher = c.lossy(SwitcherSettings.self, forKey: .switcher, default: switcher)
+        snapping = c.lossy(SnappingSettings.self, forKey: .snapping, default: snapping)
+        snapAreas = try c.lossyArray(SnapArea.self, forKey: .snapAreas)
+        mouse = c.lossy(MouseSettings.self, forKey: .mouse, default: mouse)
+        triggers = try c.lossyArray(Trigger.self, forKey: .triggers)
+        simpleModifications = try c.lossyArray(SimpleModification.self, forKey: .simpleModifications)
+        complexRules = try c.lossyArray(ComplexRule.self, forKey: .complexRules)
+        chordRules = try c.lossyArray(ChordRule.self, forKey: .chordRules)
+        keyActionRules = try c.lossyArray(KeyActionRule.self, forKey: .keyActionRules)
+        apps = try c.lossyArray(AppRef.self, forKey: .apps)
+        knownKeyboards = try c.lossyArray(DeviceRef.self, forKey: .knownKeyboards)
     }
 
     /// Actions that run arbitrary code, counted so a restored file from elsewhere can be flagged.
@@ -731,5 +732,109 @@ struct Config: Codable {
                         from: KeyCodes.capsLock, aloneKey: KeyCombo(keyCode: 53), heldModifiers: [.control]),
         ]
         return c
+    }
+}
+
+// MARK: - Decoding entries saved by other builds
+
+// Every key except the ones an entry cannot exist without is optional when reading, so a config written
+// before a field was added keeps loading. These live in extensions to keep the memberwise initializers.
+
+extension KeyCombo {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        keyCode = try c.decode(UInt16.self, forKey: .keyCode)
+        modifiers = try c.decodeIfPresent(Modifiers.self, forKey: .modifiers) ?? modifiers
+    }
+}
+
+extension DeviceRef {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        vendorId = try c.decode(Int.self, forKey: .vendorId)
+        productId = try c.decode(Int.self, forKey: .productId)
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+    }
+}
+
+extension Trigger {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try c.decode(TriggerKind.self, forKey: .kind)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? id
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? enabled
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? name
+        action = try c.decodeIfPresent(Action.self, forKey: .action) ?? action
+        appBundleId = try c.decodeIfPresent(String.self, forKey: .appBundleId)
+    }
+}
+
+extension SimpleModification {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        from = try c.decode(UInt16.self, forKey: .from)
+        to = try c.decode(UInt16.self, forKey: .to)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? id
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? enabled
+        device = try c.decodeIfPresent(DeviceRef.self, forKey: .device)
+    }
+}
+
+extension ComplexRule {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        from = try c.decode(UInt16.self, forKey: .from)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? id
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? enabled
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? name
+        aloneKey = try c.decodeIfPresent(KeyCombo.self, forKey: .aloneKey)
+        heldModifiers = try c.decodeIfPresent(Modifiers.self, forKey: .heldModifiers) ?? heldModifiers
+        aloneTimeoutMs = try c.decodeIfPresent(Int.self, forKey: .aloneTimeoutMs) ?? aloneTimeoutMs
+        device = try c.decodeIfPresent(DeviceRef.self, forKey: .device)
+        tapActions = try c.decodeIfPresent([Action].self, forKey: .tapActions) ?? tapActions
+    }
+}
+
+extension KeyActionRule {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? id
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? enabled
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? name
+        from = try c.decodeIfPresent(KeyCombo.self, forKey: .from) ?? from
+        device = try c.decodeIfPresent(DeviceRef.self, forKey: .device)
+        repeats = try c.decodeIfPresent(Bool.self, forKey: .repeats) ?? repeats
+        actions = try c.decodeIfPresent([Action].self, forKey: .actions) ?? actions
+    }
+}
+
+extension ChordRule {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? id
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? enabled
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? name
+        keys = try c.decodeIfPresent([UInt16].self, forKey: .keys) ?? keys
+        thresholdMs = try c.decodeIfPresent(Int.self, forKey: .thresholdMs) ?? thresholdMs
+        action = try c.decodeIfPresent(Action.self, forKey: .action) ?? action
+        device = try c.decodeIfPresent(DeviceRef.self, forKey: .device)
+    }
+}
+
+extension SnapArea {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        displayID = try c.decode(UInt32.self, forKey: .displayID)
+        displayName = try c.decodeIfPresent(String.self, forKey: .displayName) ?? ""
+        trigger = try c.decode(NRect.self, forKey: .trigger)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? id
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? name
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? enabled
+        display = try c.decodeIfPresent(DisplayIdentity.self, forKey: .display)
+        target = try c.decodeIfPresent(NRect.self, forKey: .target)
+        requireModifier = try c.decodeIfPresent(Modifiers.self, forKey: .requireModifier) ?? requireModifier
+        appBundleId = try c.decodeIfPresent(String.self, forKey: .appBundleId)
+        colorIndex = try c.decodeIfPresent(Int.self, forKey: .colorIndex) ?? colorIndex
+        showWhileDragging = try c.decodeIfPresent(Bool.self, forKey: .showWhileDragging) ?? showWhileDragging
     }
 }

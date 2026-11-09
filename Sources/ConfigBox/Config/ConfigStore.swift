@@ -32,14 +32,21 @@ final class ConfigStore: ObservableObject {
         }
         do {
             let data = try Data(contentsOf: fileURL)
+            LossyDecoding.reset()
             var c = try JSONDecoder().decode(Config.self, from: data)
+            if !LossyDecoding.skipped.isEmpty {
+                // Some entries could not be read and are gone from memory: the next save drops them from the
+                // file too, so keep a copy of it as it is now.
+                let backup = backupURL("partial")
+                let kept = (try? FileManager.default.copyItem(at: fileURL, to: backup)) != nil
+                Log.error("Config loaded without \(LossyDecoding.skipped.count) unreadable entr\(LossyDecoding.skipped.count == 1 ? "y" : "ies")"
+                          + (kept ? "; the file as it was is kept at \(backup.path)" : "; a copy of the file could not be kept")
+                          + ": " + LossyDecoding.skipped.joined(separator: " | "))
+            }
             Self.normalize(&c)
             config = c
         } catch {
-            let f = DateFormatter()
-            f.locale = Locale(identifier: "en_US_POSIX")
-            f.dateFormat = "yyyyMMdd-HHmmss"
-            let backup = fileURL.deletingLastPathComponent().appendingPathComponent("config.json.broken-\(f.string(from: Date()))")
+            let backup = backupURL("broken")
             do {
                 try FileManager.default.copyItem(at: fileURL, to: backup)
                 Log.error("Config load failed: \(error). Kept a backup at \(backup.path); showing the sample until edited.")
@@ -53,6 +60,14 @@ final class ConfigStore: ObservableObject {
             config = .sample
             suppressSave = false
         }
+    }
+
+    /// `config.json.<kind>-<timestamp>` next to the config file.
+    private func backupURL(_ kind: String) -> URL {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyyMMdd-HHmmss"
+        return fileURL.deletingLastPathComponent().appendingPathComponent("config.json.\(kind)-\(f.string(from: Date()))")
     }
 
     /// Repairs entries saved by older builds (e.g. an implicit fn flag recorded with arrow keys).
@@ -104,7 +119,13 @@ final class ConfigStore: ObservableObject {
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any], root["general"] is [String: Any] else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        return try JSONDecoder().decode(Config.self, from: data)
+        LossyDecoding.reset()
+        let config = try JSONDecoder().decode(Config.self, from: data)
+        if !LossyDecoding.skipped.isEmpty {
+            Log.error("Restoring \(url.lastPathComponent) without \(LossyDecoding.skipped.count) unreadable entr\(LossyDecoding.skipped.count == 1 ? "y" : "ies"): "
+                      + LossyDecoding.skipped.joined(separator: " | "))
+        }
+        return config
     }
 
     /// Replaces the settings, keeping a copy of the current ones first so the change can be undone.

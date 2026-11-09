@@ -37,7 +37,7 @@ struct TrackpadSettingsView: View {
                     }
                 }
             } header: { Text("Gesture recognition") } footer: {
-                Text("Swipe distance is in normalized trackpad units (1.0 = full width). Direction strictness is how much the main axis must dominate (1 = any diagonal counts, 2 = at least twice the other axis). Touch size is the contact-area value from the multitouch frames; fingertips are usually 1–2.5, palms larger — the Event Viewer’s Trackpad page shows live values.")
+                Text("Swipe distance is in normalized trackpad units (1.0 = full width). Direction strictness is how much the main axis must dominate (1 = any diagonal counts, 2 = at least twice the other axis). Touch size is the contact-area value from the multitouch frames; fingertips are usually 1–2.5, palms larger — the Event Viewer’s Trackpad page shows live values.").formFooter()
             }
 
             Section {
@@ -54,7 +54,7 @@ struct TrackpadSettingsView: View {
                     }
                 }
             } header: { Text("Scrolling") } footer: {
-                Text("Blocking only applies to finger counts that have a gesture trigger; two-finger scrolling is never touched. Reverse / speed here affect the trackpad and the Magic Mouse surface; the Mouse tab has the same controls for mouse wheels, and the Mouse tab’s excluded apps are honoured here too.")
+                Text("Blocking only applies to finger counts that have a gesture trigger; two-finger scrolling is never touched. Reverse / speed here affect the trackpad and the Magic Mouse surface; the Mouse tab has the same controls for mouse wheels, and the Mouse tab’s excluded apps are honoured here too.").formFooter()
             }
 
             Section {
@@ -67,7 +67,7 @@ struct TrackpadSettingsView: View {
                     }
                 }
             } header: { Text("Devices") } footer: {
-                Text("The engine runs only while at least one gesture trigger is enabled (or the Event Viewer’s Trackpad page is open). Tap-to-click, tracking speed and the system’s own gestures live in System Settings; turn off the system gesture that shares a finger count with your triggers to avoid double actions.")
+                Text("The engine runs only while at least one gesture trigger is enabled (or the Event Viewer’s Trackpad page is open). Tap-to-click, tracking speed and the system’s own gestures live in System Settings; turn off the system gesture that shares a finger count with your triggers to avoid double actions.").formFooter()
             }
         }
         .formStyle(.grouped)

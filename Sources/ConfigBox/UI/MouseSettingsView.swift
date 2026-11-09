@@ -39,7 +39,7 @@ struct MouseSettingsView: View {
                 }
                 .padding(.vertical, 4)
             } header: { Text("Scrolling") } footer: {
-                Text("Applies to discrete mouse wheels only. Trackpads and the Magic Mouse surface keep the system's own direction and speed, so you can have “natural” scrolling on the trackpad and classic scrolling on a mouse at the same time. Excluded apps are matched by the window under the pointer, not the frontmost app.")
+                Text("Applies to discrete mouse wheels only. Trackpads and the Magic Mouse surface keep the system's own direction and speed, so you can have “natural” scrolling on the trackpad and classic scrolling on a mouse at the same time. Excluded apps are matched by the window under the pointer, not the frontmost app.").formFooter()
             }
 
             Section {
@@ -51,7 +51,7 @@ struct MouseSettingsView: View {
                     }
                 }
             } header: { Text("iPhone Mirroring") } footer: {
-                Text("iPhone Mirroring ignores the scrolling settings above, so it has its own. They apply to the mouse wheel while the pointer is over the iPhone Mirroring window. With reversing off and speed at 1×, the wheel is passed through unchanged (macOS's own direction and speed).")
+                Text("iPhone Mirroring ignores the scrolling settings above, so it has its own. They apply to the mouse wheel while the pointer is over the iPhone Mirroring window. With reversing off and speed at 1×, the wheel is passed through unchanged (macOS's own direction and speed).").formFooter()
             }
 
             Section {
@@ -87,13 +87,13 @@ struct MouseSettingsView: View {
                     }
                 }
             } header: { Text("Pointer") } footer: {
-                Text("Speed changes the HID pointer resolution of each mouse (1.00× = the system's 400 dpi); it is the “DPI” knob when the mouse has no software of its own. Values are re-applied when a mouse reconnects and restored when ConfigBox quits. The system's own tracking-speed slider still applies on top.")
+                Text("Speed changes the HID pointer resolution of each mouse (1.00× = the system's 400 dpi); it is the “DPI” knob when the mouse has no software of its own. Values are re-applied when a mouse reconnects and restored when ConfigBox quits. The system's own tracking-speed slider still applies on top.").formFooter()
             }
 
             Section {
                 Toggle("Buttons 4 / 5 go back / forward (⌘[ / ⌘])", isOn: $store.config.mouse.backForwardButtons)
             } header: { Text("Buttons") } footer: {
-                Text("For anything else (remapping a button to another key, double-click actions, button gestures) use the Triggers tab.")
+                Text("For anything else (remapping a button to another key, double-click actions, button gestures) use the Triggers tab.").formFooter()
             }
         }
         .formStyle(.grouped)

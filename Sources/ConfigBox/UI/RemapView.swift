@@ -391,7 +391,7 @@ private struct SimpleEditor: View {
             Section {
                 DeviceRow(device: $rule.device, keyboards: keyboards)
             } footer: {
-                Text("Applied through hidutil at the HID level, exactly like System Settings' modifier-key mapping: no runtime cost and it even works in secure input fields.")
+                Text("Applied through hidutil at the HID level, exactly like System Settings' modifier-key mapping: no runtime cost and it even works in secure input fields.").formFooter()
             }
         }
         .formStyle(.grouped)
@@ -439,7 +439,7 @@ private struct ChordEditor: View {
                           ? L("Only fires when every key came from this keyboard.")
                           : L("Needs the Input Monitoring permission to tell keyboards apart (Settings › Permissions)."))
             } header: { Text("Simultaneous keys") } footer: {
-                Text("Keys that could start a chord are held back for the threshold; if the chord is not completed they are delivered unchanged, in order.")
+                Text("Keys that could start a chord are held back for the threshold; if the chord is not completed they are delivered unchanged, in order.").formFooter()
             }
             Section("Action") {
                 ActionEditor(action: $rule.action)
@@ -487,7 +487,7 @@ private struct ModTapEditor: View {
                     LabeledContent("Tapping term", value: "\(rule.aloneTimeoutMs) ms")
                 }
             } header: { Text("Hold") } footer: {
-                Text("Tapping term is the longest hold still counted as a tap. Caps Lock and device-limited keys are rerouted through a spare F-key (F13–F20) at the HID level.")
+                Text("Tapping term is the longest hold still counted as a tap. Caps Lock and device-limited keys are rerouted through a spare F-key (F13–F20) at the HID level.").formFooter()
             }
         }
         .formStyle(.grouped)

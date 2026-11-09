@@ -224,3 +224,10 @@ enum AppIcons {
         return AppRef(bundleId: id, name: name)
     }
 }
+
+extension View {
+    /// Section footer text in a grouped Form: macOS right-aligns wrapped footer lines by default; keep them left-aligned.
+    func formFooter() -> some View {
+        multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading)
+    }
+}

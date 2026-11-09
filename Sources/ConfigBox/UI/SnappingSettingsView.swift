@@ -17,7 +17,7 @@ struct SnappingSettingsView: View {
                         Text("fn").tag(Modifiers.function)
                     }
                 } header: { Text("Drag a window to a screen edge") } footer: {
-                    Text("Drag a window by its title bar to an edge or corner of the screen. A preview shows the target area; release the mouse to resize. Keyboard tiling is available as a Window Management action in Keyboard Shortcuts.")
+                    Text("Drag a window by its title bar to an edge or corner of the screen. A preview shows the target area; release the mouse to resize. Keyboard tiling is available as a Window Management action in Keyboard Shortcuts.").formFooter()
                 }
 
                 Section {
@@ -28,7 +28,7 @@ struct SnappingSettingsView: View {
                     Toggle("Corners snap to quarters", isOn: $store.config.snapping.corners)
                     Toggle("Ignore edges shared with another display", isOn: $store.config.snapping.ignoreSharedEdges)
                 } header: { Text("Zones") } footer: {
-                    Text("Each edge can tile the window, or apply the window frame attached to one of your snap areas (created in the Snap Areas section below). At a boundary between two displays the edge of whichever display the pointer is on reacts; turn on “Ignore edges shared…” if you keep triggering it while moving windows across.")
+                    Text("Each edge can tile the window, or apply the window frame attached to one of your snap areas (created in the Snap Areas section below). At a boundary between two displays the edge of whichever display the pointer is on reacts; turn on “Ignore edges shared…” if you keep triggering it while moving windows across.").formFooter()
                 }
 
                 SnapAreasSection()
@@ -51,7 +51,7 @@ struct SnappingSettingsView: View {
                         }
                     }
                 } header: { Text("Sensitivity") } footer: {
-                    Text("Edge margin is how far from the screen edge the pointer may be for an edge zone to trigger (1–150 pt; type a value for anything precise). Larger values are easier to hit but also easier to trigger by accident. Corners use the corner size instead.")
+                    Text("Edge margin is how far from the screen edge the pointer may be for an edge zone to trigger (1–150 pt; type a value for anything precise). Larger values are easier to hit but also easier to trigger by accident. Corners use the corner size instead.").formFooter()
                 }
             }
             .formStyle(.grouped)

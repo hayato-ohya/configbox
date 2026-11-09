@@ -121,7 +121,7 @@ struct SettingsView: View {
                     }
                 }
             } header: { Text("Permissions") } footer: {
-                Text("After granting Accessibility for the first time, macOS may require relaunching ConfigBox. Grants are tied to the code signature; the build script signs with a persistent identity so rebuilds keep them.")
+                Text("After granting Accessibility for the first time, macOS may require relaunching ConfigBox. Grants are tied to the code signature; the build script signs with a persistent identity so rebuilds keep them.").formFooter()
             }
 
             Section("General") {

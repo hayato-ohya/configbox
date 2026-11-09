@@ -89,7 +89,7 @@ private struct FrontmostAppPage: View {
                 }
                 .disabled(app?.bundleIdentifier == nil)
             } footer: {
-                Text("Switch to another app and come back: the values update every 0.5 s. Use the bundle identifier for app-specific triggers.")
+                Text("Switch to another app and come back: the values update every 0.5 s. Use the bundle identifier for app-specific triggers.").formFooter()
             }
         }
         .formStyle(.grouped)

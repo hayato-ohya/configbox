@@ -33,7 +33,7 @@ struct HIDManagerView: View {
                     Button("Deactivate") { HIDUtil.clear(); refresh() }.disabled(!HIDUtil.isActive)
                 }
             } header: { Text("Status") } footer: {
-                Text("“Activate” installs the simple modifications and the F-key routes used by Key → Actions and Mod-Tap rules into the HID event system. “Deactivate” removes exactly what ConfigBox installed.")
+                Text("“Activate” installs the simple modifications and the F-key routes used by Key → Actions and Mod-Tap rules into the HID event system. “Deactivate” removes exactly what ConfigBox installed.").formFooter()
             }
 
             Section {
@@ -81,7 +81,7 @@ struct HIDManagerView: View {
                     Text(HIDUtil.launchAgentURL.path).font(.caption).textSelection(.enabled).foregroundStyle(.secondary)
                 }
             } header: { Text("Persistence") } footer: {
-                Text("A LaunchAgent re-applies the same hidutil mappings at login. Without it, macOS forgets UserKeyMapping on logout and ConfigBox re-applies it at launch.")
+                Text("A LaunchAgent re-applies the same hidutil mappings at login. Without it, macOS forgets UserKeyMapping on logout and ConfigBox re-applies it at launch.").formFooter()
             }
         }
         .formStyle(.grouped)

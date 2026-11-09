@@ -161,10 +161,16 @@ final class KeyRemapper {
         }
     }
 
-    /// A mouse click while a Mod-Tap key is held uses it as a modifier (e.g. ⌘-click), so its alone
-    /// key must not fire on release.
-    func markHoldsUsed() {
-        for k in holds.keys { holds[k]?.used = true }
+    /// Mouse buttons and scrolling while a Mod-Tap key is held use it as a modifier (e.g. ⌃-click):
+    /// the event gets the held modifiers. With `marksUsed` the alone key no longer fires on release.
+    func applyHolds(toPointerEvent event: CGEvent, marksUsed: Bool) {
+        guard !holds.isEmpty else { return }
+        var flags = event.flags
+        for k in holds.keys {
+            if marksUsed { holds[k]?.used = true }
+            flags.formUnion(holds[k]!.rule.heldModifiers.cgFlags)
+        }
+        event.flags = flags
     }
 
     private func fireAloneIfNeeded(_ hold: Hold, now: CFAbsoluteTime) {

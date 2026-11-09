@@ -60,8 +60,14 @@ final class InputRouter {
         // chord engine; they only still need macro / trigger matching.
         let isChordReplay = event.getIntegerValueField(.eventSourceUserData) == KeySynth.chordReplayMarker
         switch type {
+        // A held Mod-Tap key acts as its modifiers for the mouse too. Pressing a button or scrolling uses
+        // the key (no tap on release); momentum scrolling continues on its own, so it does not count.
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
-            remapper.markHoldsUsed()          // a click while a Mod-Tap key is held uses it as a modifier
+            remapper.applyHolds(toPointerEvent: event, marksUsed: true)
+        case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged, .leftMouseUp, .rightMouseUp, .otherMouseUp:
+            remapper.applyHolds(toPointerEvent: event, marksUsed: false)
+        case .scrollWheel:
+            remapper.applyHolds(toPointerEvent: event, marksUsed: event.getIntegerValueField(.scrollWheelEventMomentumPhase) == 0)
         default:
             break
         }

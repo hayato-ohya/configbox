@@ -25,14 +25,26 @@ final class WindowSnapper {
         }
     }
 
+    private enum Candidate {
+        case window(AXUIElement, CGRect)
+        case none            // no focused window (yet): the clicked app may still be activating
+        case unresponsive    // the app did not answer in time: asking again would stall the event tap
+    }
+
     /// Focused window of the frontmost app, unless that app is ConfigBox itself.
-    private func candidateWindow() -> (AXUIElement, CGRect)? {
+    private func candidateWindow() -> Candidate {
         guard let app = NSWorkspace.shared.frontmostApplication,
-              app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return nil }
+              app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return .none }
         let appEl = AXUIElementCreateApplication(app.processIdentifier)
         AXUIElementSetMessagingTimeout(appEl, 0.3)
-        guard let w: AXUIElement = AX.attr(appEl, kAXFocusedWindowAttribute), let f = AX.frame(of: w) else { return nil }
-        return (w, f)
+        var value: CFTypeRef?
+        let err = AXUIElementCopyAttributeValue(appEl, kAXFocusedWindowAttribute as CFString, &value)
+        if err == .cannotComplete { return .unresponsive }
+        guard err == .success, let value, CFGetTypeID(value) == AXUIElementGetTypeID() else { return .none }
+        let w = value as! AXUIElement
+        AXUIElementSetMessagingTimeout(w, 0.3)   // the timeout is per element: the window needs its own
+        guard let f = AX.frame(of: w) else { return .none }
+        return .window(w, f)
     }
 
     private func logMiss(_ cg: CGPoint) {
@@ -62,13 +74,15 @@ final class WindowSnapper {
 
     private enum State {
         case idle
-        case pending(window: AXUIElement, origin: CGPoint, at: CGPoint, since: CFAbsoluteTime)
+        case pending(window: AXUIElement, frame: CGRect, at: CGPoint, since: CFAbsoluteTime)
         case dragging(window: AXUIElement)
         case notAWindow
     }
 
     private var state: State = .idle
     private var dragStart: CGPoint?
+    /// When the first lookup of the dragged window failed during this drag; retries stop shortly after.
+    private var firstMiss: CFAbsoluteTime?
     private var currentZone: Zone?
     private var target: CGRect?      // AppKit coordinates
     private var preview: SnapPreviewPanel?
@@ -83,6 +97,7 @@ final class WindowSnapper {
         case .leftMouseDown:
             dragStart = event.location
             state = .idle
+            firstMiss = nil
             currentZone = nil
             target = nil
 
@@ -97,15 +112,32 @@ final class WindowSnapper {
             switch state {
             case .idle:
                 guard hypot(loc.x - start.x, loc.y - start.y) > 6 else { return }
-                guard let (w, f) = candidateWindow() else { return }   // app may still be activating: try again on the next event
-                state = .pending(window: w, origin: f.origin, at: loc, since: CFAbsoluteTimeGetCurrent())
-            case .pending(let w, let origin, let at, let since):
+                let now = CFAbsoluteTimeGetCurrent()
+                switch candidateWindow() {
+                case .window(let w, let f):
+                    state = .pending(window: w, frame: f, at: loc, since: now)
+                case .unresponsive:
+                    state = .notAWindow
+                    Log.debug("snapper: frontmost app is not responding; ignoring this drag")
+                case .none:
+                    // The app may still be activating: try again on the next events, but not forever.
+                    if let first = firstMiss, now - first > 0.6 { state = .notAWindow } else if firstMiss == nil { firstMiss = now }
+                }
+            case .pending(let w, let frame, let at, let since):
                 guard hypot(loc.x - at.x, loc.y - at.y) > 3 else { return }
                 // The clicked app may have become frontmost only now: follow the current focused window.
-                var window = w, base = origin
-                if let (cw, cf) = candidateWindow(), !CFEqual(cw, w) { window = cw; base = cf.origin; }
+                var window = w, base = frame
+                switch candidateWindow() {
+                case .window(let cw, let cf): if !CFEqual(cw, w) { window = cw; base = cf }
+                case .unresponsive: state = .notAWindow; return
+                case .none: break
+                }
                 guard let f = AX.frame(of: window) else { state = .notAWindow; return }
-                if abs(f.origin.x - base.x) > 1 || abs(f.origin.y - base.y) > 1 {
+                if abs(f.width - base.width) > 1 || abs(f.height - base.height) > 1 {
+                    // Resizing from the left or top edge moves the origin too, but it is not a window drag.
+                    state = .notAWindow
+                    Log.debug("snapper: not a window drag (window is being resized)")
+                } else if abs(f.origin.x - base.minX) > 1 || abs(f.origin.y - base.minY) > 1 {
                     state = .dragging(window: window)
                     draggedApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
                     currentFlags = Modifiers(cgFlags: event.flags)
@@ -115,7 +147,7 @@ final class WindowSnapper {
                     state = .notAWindow           // mouse moved but no window did: text selection, scrollbar, …
                     Log.debug("snapper: not a window drag (focused window did not move)")
                 } else {
-                    state = .pending(window: window, origin: base, at: loc, since: since)
+                    state = .pending(window: window, frame: base, at: loc, since: since)
                 }
             case .dragging:
                 // Modifier-gated areas appear or disappear as soon as the set of visible areas changes.

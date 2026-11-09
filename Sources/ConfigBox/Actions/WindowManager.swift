@@ -63,7 +63,9 @@ enum AX {
         guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
         let appEl = AXUIElementCreateApplication(app.processIdentifier)
         AXUIElementSetMessagingTimeout(appEl, 0.5)
-        return attr(appEl, kAXFocusedWindowAttribute)
+        guard let window: AXUIElement = attr(appEl, kAXFocusedWindowAttribute) else { return nil }
+        AXUIElementSetMessagingTimeout(window, 0.5)   // the timeout is per element: the window needs its own
+        return window
     }
 
     // Coordinate conversion between AppKit (bottom-left origin) and AX (top-left origin of primary screen).

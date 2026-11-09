@@ -16,6 +16,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         src.resume()
         termSource = src
 
+        // Accessibility calls run on the main thread, which also serves the event tap. The default timeout
+        // is 6 s per call, so an unresponsive app would freeze all input: cap it for every element.
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 1.0)
+
         store.$config
             .debounce(for: .milliseconds(250), scheduler: DispatchQueue.main)
             .sink { [weak self] cfg in self?.apply(cfg) }

@@ -73,12 +73,16 @@ struct SectionTabs: NSViewRepresentable {
 }
 
 final class UIState: ObservableObject {
-    @Published var section: UISection = .trackpad
-    @Published var selectedApp: String? = nil      // nil = all apps
+    // A selection only makes sense in the list it was made in: leaving that list clears it, so the editor
+    // and the − button never act on a row that is no longer on screen.
+    @Published var section: UISection = .trackpad { didSet { if section != oldValue { selectedTrigger = nil } } }
+    @Published var selectedApp: String? = nil {    // nil = all apps
+        didSet { if selectedApp != oldValue { selectedTrigger = nil } }
+    }
     @Published var selectedTrigger: UUID? = nil
     @Published var mousePage = 0          // 0 = triggers, 1 = settings
     @Published var trackpadPage = 0       // 0 = triggers, 1 = settings
-    @Published var remapCategory: RemapCategory = .simple
+    @Published var remapCategory: RemapCategory = .simple { didSet { if remapCategory != oldValue { selectedRemapID = nil } } }
     @Published var selectedRemapID: UUID? = nil
 }
 

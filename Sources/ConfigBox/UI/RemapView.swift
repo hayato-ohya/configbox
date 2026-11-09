@@ -306,10 +306,12 @@ private struct RemapRuleList: View {
 
     private func remove() {
         guard let id = state.selectedRemapID else { return }
-        store.config.simpleModifications.removeAll { $0.id == id }
-        store.config.keyActionRules.removeAll { $0.id == id }
-        store.config.chordRules.removeAll { $0.id == id }
-        store.config.complexRules.removeAll { $0.id == id }
+        switch category {   // only the list on screen
+        case .simple: store.config.simpleModifications.removeAll { $0.id == id }
+        case .macro: store.config.keyActionRules.removeAll { $0.id == id }
+        case .chord: store.config.chordRules.removeAll { $0.id == id }
+        case .modTap: store.config.complexRules.removeAll { $0.id == id }
+        }
         state.selectedRemapID = nil
     }
 }

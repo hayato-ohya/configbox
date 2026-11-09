@@ -96,7 +96,7 @@ struct TriggerListView: View {
     }
 
     private func remove() {
-        guard let id = state.selectedTrigger else { return }
+        guard let id = state.selectedTrigger, filtered.contains(where: { $0.id == id }) else { return }
         store.remove(triggerIDs: [id])
         state.selectedTrigger = nil
     }

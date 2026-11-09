@@ -113,7 +113,7 @@ final class SnapAreaEditSession: NSObject, NSWindowDelegate, ObservableObject {
         let ids = Set(areas.map(\.id))
 
         for (id, w) in windows where !ids.contains(id) { w.orderOut(nil); w.contentView = nil; windows[id] = nil }
-        for (id, w) in targetWindows where !ids.contains(id) || areas.first { $0.id == id }?.target == nil {
+        for (id, w) in targetWindows where !ids.contains(id) || areas.first(where: { $0.id == id })?.target == nil {
             w.orderOut(nil); w.contentView = nil; targetWindows[id] = nil
         }
 
@@ -173,15 +173,18 @@ final class SnapAreaEditSession: NSObject, NSWindowDelegate, ObservableObject {
         applyingFromWindow = true
         defer { applyingFromWindow = false }
         var a = store.config.snapAreas[idx]
-        let n = NRect(rect: w.frame, in: screen.frame)
         if w.isTarget {
-            a.target = n
+            // The target is stored relative to the area's display, which is what everything reading it uses.
+            let base = NSScreen.screen(withDisplayID: a.displayID) ?? screen
+            a.target = NRect(rect: w.frame, in: base.frame)
         } else {
-            a.trigger = n
+            a.trigger = NRect(rect: w.frame, in: screen.frame)
             if a.displayID != screen.displayID {
+                // Re-base the custom target on the new display so it stays where it is on screen.
+                let oldScreen = NSScreen.screen(withDisplayID: a.displayID)
+                let targetFrame = targetWindows[a.id]?.frame ?? oldScreen.flatMap { s in a.target.map { $0.rect(in: s.frame) } }
                 a.link(to: screen)
-                // Keep the custom target on the same display as the drop area.
-                if let t = targetWindows[a.id], let ts = t.screen, ts != screen { a.target = NRect(rect: t.frame, in: screen.frame) }
+                if a.target != nil, let f = targetFrame { a.target = NRect(rect: f, in: screen.frame) }
             }
         }
         if a != store.config.snapAreas[idx] { store.config.snapAreas[idx] = a }

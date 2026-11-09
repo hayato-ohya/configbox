@@ -103,6 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        store.flushPendingSave()
         // With login persistence on, the HID-level mappings intentionally outlive the app.
         if !store.config.general.keepHIDMappingsAtLogin { HIDUtil.clear() }
         PointerSettings.shared.restore()

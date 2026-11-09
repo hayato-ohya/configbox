@@ -24,7 +24,9 @@ extension SnapArea {
 
     /// Display IDs are assigned per Mac (and can change with the port), so a restored or older config may point at
     /// a display that is not connected, or at a different one that happens to have the same ID. Re-links each area
-    /// to the connected display with the same vendor / model / serial, or else the same name when that is unique.
+    /// to the connected display with the same vendor / model / serial when exactly one matches, or (for configs
+    /// saved before identities were recorded) the same name when that is unique. Areas whose display is merely
+    /// unplugged are left alone.
     /// Returns true if anything changed.
     static func relink(_ areas: inout [SnapArea], screens: [NSScreen] = NSScreen.screens) -> Bool {
         var changed = false
@@ -33,8 +35,14 @@ extension SnapArea {
             if let s = screens.first(where: { $0.displayID == a.displayID }),
                a.display.map({ $0 == s.displayIdentity }) ?? (s.localizedName == a.displayName) {
                 if a.display == nil { a.display = s.displayIdentity }        // same display: just remember its identity
-            } else if let want = a.display, let s = screens.first(where: { $0.displayIdentity == want }) {
-                a.link(to: s)
+            } else if let want = a.display {
+                // Only move when the match is unambiguous. If the saved ID now belongs to a different display, the
+                // config came from another Mac (or the IDs were reassigned): follow the identity. If the saved display
+                // is just absent, follow it only when the identity has a real serial — two identical monitors often
+                // both report serial 0, and the remaining one must not inherit the unplugged one's areas.
+                let same = screens.filter { $0.displayIdentity == want }
+                let idTakenByOther = screens.contains { $0.displayID == a.displayID }
+                if same.count == 1, idTakenByOther || want.serial != 0 { a.link(to: same[0]) }
             } else if case let named = screens.filter({ $0.localizedName == a.displayName }), named.count == 1 {
                 a.link(to: named[0])
             }

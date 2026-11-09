@@ -31,11 +31,17 @@ final class InputRouter {
     func apply(config: Config) {
         keyboardEnabled = config.general.keyboardEnabled
         treatJISAsANSI = keyboardEnabled && config.general.treatJISAsANSI
+        shortcutTriggers = config.triggers.filter { $0.enabled && $0.kind.isShortcut }
+        // Keys the tap must keep seeing as themselves: never hand them out as routing keys.
+        var reserved = Set(shortcutTriggers.compactMap { t -> UInt16? in
+            if case .shortcut(let combo) = t.kind { return combo.keyCode } else { return nil }
+        })
+        if keyboardEnabled { reserved.formUnion(config.chordRules.filter(\.enabled).flatMap(\.keys)) }
         remapper.apply(simple: keyboardEnabled ? config.simpleModifications : [],
                        complex: keyboardEnabled ? config.complexRules : [],
-                       macros: keyboardEnabled ? config.keyActionRules : [])
+                       macros: keyboardEnabled ? config.keyActionRules : [],
+                       reserved: reserved)
         chords.apply(rules: keyboardEnabled ? config.chordRules : [])
-        shortcutTriggers = config.triggers.filter { $0.enabled && $0.kind.isShortcut }
         MouseEngine.shared.apply(triggers: config.general.mouseEnabled ? config.triggers : [])
         MouseEngine.shared.backForwardButtons = config.general.mouseEnabled && config.mouse.backForwardButtons
         ScrollProcessor.shared.settings = config.general.mouseEnabled ? config.mouse : MouseSettings()
@@ -49,6 +55,15 @@ final class InputRouter {
 
     private func handle(_ type: CGEventType, _ event: CGEvent) -> CGEvent? {
         if KeySynth.isSynthetic(event) { return event }
+        // Keys replayed by the chord engine already went through the switcher, the remapper and the
+        // chord engine; they only still need macro / trigger matching.
+        let isChordReplay = event.getIntegerValueField(.eventSourceUserData) == KeySynth.chordReplayMarker
+        switch type {
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
+            remapper.markHoldsUsed()          // a click while a Mod-Tap key is held uses it as a modifier
+        default:
+            break
+        }
         switch type {
         case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
             if !recording && TrackpadEngine.shared.handleClick(type, event) { return nil }
@@ -66,7 +81,7 @@ final class InputRouter {
         default:
             break
         }
-        let layoutNote = rewriteJISToANSI(type, event) ? "JIS → ANSI; " : ""
+        let layoutNote = !isChordReplay && rewriteJISToANSI(type, event) ? "JIS → ANSI; " : ""
         if recording { return event }
 
         let monitor = EventMonitor.shared
@@ -75,12 +90,14 @@ final class InputRouter {
             return out
         }
 
-        if SwitcherController.shared.handle(type, event) { return done(nil, "consumed: window switcher") }
+        if !isChordReplay && SwitcherController.shared.handle(type, event) { return done(nil, "consumed: window switcher") }
 
         guard keyboardEnabled else { return done(event, "pass (keyboard engine off)") }
         let flagsBefore = event.flags
-        if remapper.handle(type, event) { return done(nil, "consumed: Mod-Tap key") }
-        if chords.handle(type, event) { return done(nil, "held / consumed: simultaneous keys") }
+        if !isChordReplay {
+            if remapper.handle(type, event) { return done(nil, "consumed: Mod-Tap key") }
+            if chords.handle(type, event) { return done(nil, "held / consumed: simultaneous keys") }
+        }
         let remapNote = event.flags != flagsBefore ? "modifiers added by Mod-Tap key; " : ""
 
         if type == .keyDown || type == .keyUp, let macro = matchMacro(event) {

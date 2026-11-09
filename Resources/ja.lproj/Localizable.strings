@@ -118,6 +118,7 @@
 "Corner size" = "角の判定サイズ";
 "Corners" = "角";
 "Corners snap to quarters" = "角では画面の 1/4 にスナップ";
+"Could not reset the settings." = "設定をリセットできませんでした。";
 "Could not restore the settings." = "設定を復元できませんでした。";
 "Could not save the settings." = "設定を保存できませんでした。";
 "Create" = "作成";
@@ -315,6 +316,7 @@
 "Presets" = "プリセット";
 "Press 2–3 keys together…" = "2〜3個のキーを同時に押してください…";
 "Press Refresh to read the current state." = "「更新」を押すと現在の状態を読み込みます。";
+"Press a key together with ⌘, ⌥ or ⌃. Esc cancels." = "⌘、⌥、⌃ のいずれかと一緒にキーを押してください。Esc でキャンセルします。";
 "Press a key, a combination, or a modifier alone (Windows/⌘, Alt/⌥, …). Esc cancels." = "キー、組み合わせ、または修飾キー単体（Windows/⌘、Alt/⌥ など）を押してください。Esc でキャンセルします。";
 "Press a mouse button here…" = "ここでマウスボタンを押してください…";
 "Press keys…" = "キーを押してください…";
@@ -343,7 +345,9 @@
 "Reset Accessibility entry…" = "アクセシビリティの項目をリセット…";
 "Reset Input Monitoring entry…" = "入力監視の項目をリセット…";
 "Reset Screen Recording entry…" = "画面収録の項目をリセット…";
+"Reset all settings to the sample configuration?" = "すべての設定をサンプル構成にリセットしますか？";
 "Reset to Sample" = "サンプルにリセット";
+"Reset" = "リセット";
 "Restart Engine" = "エンジンを再起動";
 "Restore" = "復元";
 "Restore Settings…" = "設定を復元…";

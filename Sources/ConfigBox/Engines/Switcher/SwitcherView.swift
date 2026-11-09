@@ -16,16 +16,20 @@ struct VisualEffectView: NSViewRepresentable {
 /// Simple wrapping layout (rows fill left to right, centered).
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
+    /// Wrapping width used when the proposal has no width (e.g. under `.fixedSize()`), so the measured
+    /// size matches the rows `placeSubviews` lays out.
+    var maxWidth: CGFloat = .infinity
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let rows = layoutRows(maxWidth: proposal.width ?? .infinity, subviews: subviews)
+        let rows = layoutRows(maxWidth: min(proposal.width ?? maxWidth, maxWidth), subviews: subviews)
         let width = rows.map(\.width).max() ?? 0
         let height = rows.reduce(0) { $0 + $1.height } + CGFloat(max(rows.count - 1, 0)) * spacing
         return CGSize(width: width, height: height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let rows = layoutRows(maxWidth: bounds.width, subviews: subviews)
+        // Small tolerance: bounds may be rounded slightly below the measured width.
+        let rows = layoutRows(maxWidth: bounds.width + 0.5, subviews: subviews)
         var y = bounds.minY
         for row in rows {
             var x = bounds.minX + (bounds.width - row.width) / 2
@@ -70,7 +74,8 @@ struct SwitcherView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { onCancel() }
 
-                FlowLayout(spacing: 6) {
+                // Wrap at the panel's max width (85% of the screen minus the padding below).
+                FlowLayout(spacing: 6, maxWidth: max(geo.size.width * 0.85 - 28, 1)) {
                     ForEach(Array(model.items.enumerated()), id: \.element.id) { i, item in
                         WindowCell(item: item,
                                    height: CGFloat(model.settings.thumbnailHeight),

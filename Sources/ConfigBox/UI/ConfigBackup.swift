@@ -42,6 +42,22 @@ enum ConfigBackup {
         }
     }
 
+    static func resetToSample(_ store: ConfigStore) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = L("Reset all settings to the sample configuration?")
+        alert.informativeText = L("Your current settings are replaced. A copy of them is kept as %@.", ConfigStore.preRestoreFileName)
+        alert.addButton(withTitle: L("Reset"))
+        alert.addButton(withTitle: L("Cancel"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        do {
+            try store.replaceConfig(with: .sample)
+        } catch {
+            Log.error("Settings reset failed: \(error)")
+            showError(L("Could not reset the settings."), error.localizedDescription)
+        }
+    }
+
     private static func confirm(file: String, config: Config) -> Bool {
         var details = L("Your current settings are replaced. A copy of them is kept as %@.", ConfigStore.preRestoreFileName)
         let scripts = config.scriptActionCount

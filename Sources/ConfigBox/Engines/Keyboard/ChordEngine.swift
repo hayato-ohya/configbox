@@ -44,9 +44,12 @@ final class ChordEngine {
             let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
             if consumed.contains(code) { return true }                  // repeats of a fired chord
             if isRepeat { return pending.contains { $0.code == code } }
-            guard chordKeys.contains(code) else {
-                flush()                                                  // unrelated key: release held keys first, in order
-                return false
+            // Keys pressed with ⌘/⌃/⌥ are shortcuts, not chord candidates: never delay them.
+            let shortcutMods = !event.flags.intersection([.maskCommand, .maskControl, .maskAlternate]).isEmpty
+            guard chordKeys.contains(code), !shortcutMods else {
+                guard !pending.isEmpty else { return false }
+                flush(then: event)                                       // unrelated key: release held keys first, in order
+                return true                                              // (this key was replayed after them)
             }
             if let copy = event.copy() { pending.append((code, copy)) }
             let held = Set(pending.map(\.code))
@@ -72,8 +75,8 @@ final class ChordEngine {
         case .keyUp:
             if consumed.remove(code) != nil { return true }
             if pending.contains(where: { $0.code == code }) {
-                flush()                                                  // tapped alone before the threshold
-                return false
+                flush(then: event)                                       // tapped alone before the threshold
+                return true                                              // (the key up was replayed after its key down)
             }
             return false
         default:
@@ -81,14 +84,16 @@ final class ChordEngine {
         }
     }
 
-    /// Replays held-back key downs in their original order.
-    private func flush() {
+    /// Replays held-back key downs in their original order, followed by `current` if given.
+    /// Replays are tagged so the router skips this engine for them but still matches macros and triggers.
+    private func flush(then current: CGEvent? = nil) {
         timeout?.cancel(); timeout = nil
-        let events = pending
+        var events = pending.map(\.event)
         pending = []
-        for p in events {
-            p.event.setIntegerValueField(.eventSourceUserData, value: KeySynth.marker)
-            p.event.post(tap: .cghidEventTap)
+        if let copy = current?.copy() { events.append(copy) }
+        for e in events {
+            e.setIntegerValueField(.eventSourceUserData, value: KeySynth.chordReplayMarker)
+            e.post(tap: .cghidEventTap)
         }
     }
 }

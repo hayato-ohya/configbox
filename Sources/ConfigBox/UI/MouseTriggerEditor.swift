@@ -104,6 +104,7 @@ struct MouseRecorder: View {
     var onRecord: (MouseButton, Modifiers) -> Void
     @State private var recording = false
     @State private var monitor: Any?
+    @State private var gate: RecordingGate?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -119,7 +120,7 @@ struct MouseRecorder: View {
 
     private func start() {
         recording = true
-        InputRouter.shared.recording = true
+        gate = RecordingGate { stop() }
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]) { e in
             if e.type == .keyDown { if e.keyCode == 53 { stop() }; return e }
             // Ignore the click that lands on the Record button itself (left, no modifiers) when it started recording.
@@ -135,6 +136,7 @@ struct MouseRecorder: View {
         if let m = monitor { NSEvent.removeMonitor(m) }
         monitor = nil
         recording = false
-        InputRouter.shared.recording = false
+        gate?.end()
+        gate = nil
     }
 }

@@ -50,6 +50,19 @@ final class SwitcherController {
             return true
         }
 
+        if holdMode && !lingering && (type == .keyDown || type == .keyUp)
+            && mods.intersection(sc.modifiers) != sc.modifiers {
+            // The modifier is no longer held but we never saw its flagsChanged (e.g. the event tap timed out):
+            // treat this as the release so the switcher cannot get stuck swallowing every key.
+            shiftHeld = mods.contains(.shift)
+            if settings.releaseDelayMs > 0 || shiftHeld {
+                startLinger()
+            } else {
+                commit()
+                return false   // let the key through to the newly focused window
+            }
+        }
+
         switch type {
         case .keyDown:
             let shift = mods.contains(.shift)

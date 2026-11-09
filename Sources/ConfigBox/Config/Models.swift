@@ -88,7 +88,7 @@ enum GestureKind: String, Codable, CaseIterable, Identifiable {
     }
     var symbol: String {
         switch self {
-        case .tap: L("hand.tap")
+        case .tap: "hand.tap"
         case .click: "cursorarrow.click"
         case .swipeUp: "arrow.up"
         case .swipeDown: "arrow.down"

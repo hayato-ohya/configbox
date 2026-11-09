@@ -12,7 +12,7 @@ struct SwitcherSettingsView: View {
             Section {
                 Toggle("Enable window switcher", isOn: $store.config.switcher.enabled)
                 LabeledContent("Shortcut") {
-                    KeyRecorder(combo: $store.config.switcher.shortcut, allowClear: false)
+                    KeyRecorder(combo: $store.config.switcher.shortcut, allowClear: false, requireModifier: true)
                 }
                 Text("Hold the modifier(s) and press the key to cycle windows; release the modifier to switch. Add ⇧ to go backwards. At least one modifier is required.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -168,7 +168,7 @@ struct SettingsView: View {
                 HStack {
                     Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([store.fileURL]) }
                     Button("Reload") { store.load() }
-                    Button("Reset to Sample", role: .destructive) { store.config = .sample }
+                    Button("Reset to Sample", role: .destructive) { ConfigBackup.resetToSample(store) }
                 }
                 HStack {
                     Button("Save Settings…") { ConfigBackup.save(store) }

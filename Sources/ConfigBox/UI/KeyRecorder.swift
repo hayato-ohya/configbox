@@ -5,8 +5,11 @@ import AppKit
 struct KeyRecorder: View {
     @Binding var combo: KeyCombo
     var allowClear = true
+    /// Only accept a key pressed with a modifier other than ⇧ (the window switcher needs one).
+    var requireModifier = false
     @State private var recording = false
     @State private var monitor: Any?
+    @State private var gate: RecordingGate?
 
     var body: some View {
         HStack(spacing: 4) {
@@ -18,7 +21,7 @@ struct KeyRecorder: View {
                     .foregroundStyle(recording ? Color.red : (combo.isUnset ? Color.secondary : Color.primary))
             }
             .buttonStyle(.bordered)
-            .help(recording ? "Press a key, a combination, or a modifier alone (Windows/⌘, Alt/⌥, …). Esc cancels." : "Click to record")
+            .help(recording ? (requireModifier ? L("Press a key together with ⌘, ⌥ or ⌃. Esc cancels.") : L("Press a key, a combination, or a modifier alone (Windows/⌘, Alt/⌥, …). Esc cancels.")) : L("Click to record"))
             if allowClear && !combo.isUnset && !recording {
                 ClearButton { combo = .unset }
             }
@@ -31,7 +34,7 @@ struct KeyRecorder: View {
     private func start() {
         recording = true
         pendingModifier = nil
-        InputRouter.shared.recording = true
+        gate = RecordingGate { stop() }
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { e in
             let flags = e.cgEvent?.flags ?? []
             if e.type == .flagsChanged {
@@ -40,13 +43,19 @@ struct KeyRecorder: View {
                 let isDown = flags.contains(KeyCodes.modifierFlag(for: code))
                 if isDown { pendingModifier = code }
                 else if pendingModifier == code {
-                    combo = KeyCombo(keyCode: code, modifiers: [])
-                    stop()
+                    pendingModifier = nil
+                    if !requireModifier {
+                        combo = KeyCombo(keyCode: code, modifiers: [])
+                        stop()
+                    }
                 }
                 return nil
             }
             pendingModifier = nil
             let mods = KeyCodes.modifiers(for: e.keyCode, flags: flags)
+            if e.keyCode == 53 && mods.isEmpty { stop(); return nil }
+            // Shift alone can't hold a switcher-style shortcut (it means "backwards"); keep waiting.
+            if requireModifier && mods.subtracting(.shift).isEmpty { return nil }
             combo = KeyCombo(keyCode: e.keyCode, modifiers: mods)
             stop()
             return nil
@@ -57,7 +66,36 @@ struct KeyRecorder: View {
         if let m = monitor { NSEvent.removeMonitor(m) }
         monitor = nil
         recording = false
-        InputRouter.shared.recording = false
+        gate?.end()
+        gate = nil
+    }
+}
+
+/// Bypasses the engines (`InputRouter.recording`) while at least one recorder is active, and cancels
+/// a recording when the app or its window loses focus so rules are never left switched off.
+/// `end()` is idempotent, so a recorder stopped twice does not release another recorder's hold.
+final class RecordingGate {
+    private static var count = 0
+    private var observers: [NSObjectProtocol] = []
+    private var ended = false
+
+    init(onCancel: @escaping () -> Void) {
+        Self.count += 1
+        InputRouter.shared.recording = true
+        let nc = NotificationCenter.default
+        observers.append(nc.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { _ in onCancel() })
+        if let w = NSApp.keyWindow {
+            observers.append(nc.addObserver(forName: NSWindow.didResignKeyNotification, object: w, queue: .main) { _ in onCancel() })
+        }
+    }
+
+    func end() {
+        guard !ended else { return }
+        ended = true
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        observers = []
+        Self.count -= 1
+        InputRouter.shared.recording = Self.count > 0
     }
 }
 

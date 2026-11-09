@@ -16,7 +16,9 @@ final class KeyRemapper {
     /// Key macros keyed by effective source keycode (possibly a routed F-key).
     private(set) var keyActions: [UInt16: [KeyActionRule]] = [:]
 
-    func apply(simple: [SimpleModification], complex: [ComplexRule], macros: [KeyActionRule] = []) {
+    /// `reserved`: key codes the tap must still see as themselves (shortcut triggers, chord keys),
+    /// so they are never used as routing keys.
+    func apply(simple: [SimpleModification], complex: [ComplexRule], macros: [KeyActionRule] = [], reserved: Set<UInt16> = []) {
         rules = [:]
         holds = [:]
         keyActions = [:]
@@ -36,20 +38,35 @@ final class KeyRemapper {
         // macOS delivers no key event for F21–F24, so they cannot be used here.
         var routingPool: [UInt16] = [79, 80, 90, 105, 107, 113, 106, 64, 81, 95]   // F18 F19 F20 F13 F14 F15 F16 F17 Keypad= Keypad,
         unroutable = []
-        let used = Set(complex.filter(\.enabled).map(\.from)).union(macros.filter(\.enabled).map(\.from.keyCode))
+        let used = Set(complex.filter(\.enabled).map(\.from))
+            .union(macros.filter(\.enabled).map(\.from.keyCode))
+            .union(simple.filter(\.enabled).map(\.to))
+            .union(reserved)
         routingPool.removeAll { used.contains($0) }
+
+        // One route per (source key, keyboard), shared by every rule on that key: hidutil honours
+        // only one mapping per source.
+        struct RouteKey: Hashable { let src: UInt16; let device: DeviceRef? }
+        var routes: [RouteKey: UInt16] = [:]
+        func route(_ src: UInt16, _ device: DeviceRef?) -> UInt16? {
+            let key = RouteKey(src: src, device: device)
+            if let r = routes[key] { return r }
+            guard let r = routingPool.first, let f = KeyCodes.hidUsage(for: src), let t = KeyCodes.hidUsage(for: r) else { return nil }
+            routingPool.removeFirst()
+            if let dev = device { perDevice[dev, default: []].append(HIDMapping(src: f, dst: t)) }
+            else { hid.append(HIDMapping(src: f, dst: t)) }
+            routes[key] = r
+            return r
+        }
 
         // Key macros limited to one keyboard (or on Caps Lock) use the same per-device routing trick.
         for m in macros where m.enabled && !m.from.isUnset {
             var src = m.from.keyCode
             if m.device != nil || src == KeyCodes.capsLock || KeyCodes.hidOnly.contains(src) {
-                guard let route = routingPool.first, let f = KeyCodes.hidUsage(for: src), let t = KeyCodes.hidUsage(for: route) else {
+                guard let r = route(src, m.device) else {
                     Log.error("No free routing key for macro '\(m.name)'"); unroutable.append(m.name); continue
                 }
-                routingPool.removeFirst()
-                if let dev = m.device { perDevice[dev, default: []].append(HIDMapping(src: f, dst: t)) }
-                else { hid.append(HIDMapping(src: f, dst: t)) }
-                src = route
+                src = r
             }
             keyActions[src, default: []].append(m)
         }
@@ -58,13 +75,10 @@ final class KeyRemapper {
             var src = r.from
             let needsRoute = r.device != nil || src == KeyCodes.capsLock || KeyCodes.hidOnly.contains(src)
             if needsRoute {
-                guard let route = routingPool.first, let f = KeyCodes.hidUsage(for: r.from), let t = KeyCodes.hidUsage(for: route) else {
+                guard let rt = route(r.from, r.device) else {
                     Log.error("No free routing key for rule '\(r.name)'"); unroutable.append(r.name); continue
                 }
-                routingPool.removeFirst()
-                if let dev = r.device { perDevice[dev, default: []].append(HIDMapping(src: f, dst: t)) }
-                else { hid.append(HIDMapping(src: f, dst: t)) }
-                src = route
+                src = rt
             }
             rules[src] = r
         }
@@ -111,7 +125,11 @@ final class KeyRemapper {
 
         case .flagsChanged:
             if let rule = rules[code], KeyCodes.isModifier(code) {
-                let isDown = event.flags.contains(KeyCodes.modifierFlag(for: code))
+                // Use the left/right device bit so the other side's key of the same modifier does not
+                // mask this key's release; fall back to the shared flag when no device bits are set.
+                let raw = event.flags.rawValue
+                let isDown = raw & 0x207F != 0 ? raw & KeyCodes.deviceFlagMask(for: code) != 0
+                                               : event.flags.contains(KeyCodes.modifierFlag(for: code))
                 if isDown {
                     if holds[code] == nil { holds[code] = Hold(rule: rule, down: now) }
                 } else if let hold = holds.removeValue(forKey: code) {
@@ -129,6 +147,12 @@ final class KeyRemapper {
         default:
             return false
         }
+    }
+
+    /// A mouse click while a Mod-Tap key is held uses it as a modifier (e.g. ⌘-click), so its alone
+    /// key must not fire on release.
+    func markHoldsUsed() {
+        for k in holds.keys { holds[k]?.used = true }
     }
 
     private func fireAloneIfNeeded(_ hold: Hold, now: CFAbsoluteTime) {

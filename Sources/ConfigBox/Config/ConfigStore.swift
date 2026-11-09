@@ -6,11 +6,14 @@ final class ConfigStore: ObservableObject {
     static let shared = ConfigStore()
 
     @Published var config: Config {
-        didSet { scheduleSave() }
+        didSet { if !suppressSave { scheduleSave() } }
     }
 
     let fileURL: URL
     private var saveWork: DispatchWorkItem?
+    /// Set while loading a config.json that could not be read, so the sample shown instead does not
+    /// overwrite the user's file until they actually edit something.
+    private var suppressSave = false
 
     private init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -22,19 +25,33 @@ final class ConfigStore: ObservableObject {
     }
 
     func load() {
-        guard let data = try? Data(contentsOf: fileURL) else {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             config = .sample
             saveNow()
             return
         }
         do {
+            let data = try Data(contentsOf: fileURL)
             var c = try JSONDecoder().decode(Config.self, from: data)
             Self.normalize(&c)
             config = c
         } catch {
-            Log.error("Config decode failed: \(error). Keeping a backup and starting from sample.")
-            try? FileManager.default.copyItem(at: fileURL, to: fileURL.appendingPathExtension("broken"))
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = "yyyyMMdd-HHmmss"
+            let backup = fileURL.deletingLastPathComponent().appendingPathComponent("config.json.broken-\(f.string(from: Date()))")
+            do {
+                try FileManager.default.copyItem(at: fileURL, to: backup)
+                Log.error("Config load failed: \(error). Kept a backup at \(backup.path); showing the sample until edited.")
+            } catch let copyError {
+                Log.error("Config load failed: \(error). Backup failed too: \(copyError); showing the sample until edited.")
+            }
+            // Don't write the sample over the unreadable file; the next real edit saves normally.
+            saveWork?.cancel()
+            saveWork = nil
+            suppressSave = true
             config = .sample
+            suppressSave = false
         }
     }
 
@@ -51,9 +68,17 @@ final class ConfigStore: ObservableObject {
 
     private func scheduleSave() {
         saveWork?.cancel()
-        let w = DispatchWorkItem { [weak self] in self?.saveNow() }
+        let w = DispatchWorkItem { [weak self] in self?.saveWork = nil; self?.saveNow() }
         saveWork = w
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: w)
+    }
+
+    /// Writes a debounced save immediately (used on quit so recent edits are not lost).
+    func flushPendingSave() {
+        guard let w = saveWork, !w.isCancelled else { return }
+        w.cancel()
+        saveWork = nil
+        saveNow()
     }
 
     func saveNow() {

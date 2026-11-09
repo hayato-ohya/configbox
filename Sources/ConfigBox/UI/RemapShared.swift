@@ -65,6 +65,7 @@ struct ChordRecorder: View {
     @State private var recording = false
     @State private var pressed: [UInt16] = []
     @State private var monitor: Any?
+    @State private var gate: RecordingGate?
 
     var body: some View {
         Button {
@@ -81,7 +82,7 @@ struct ChordRecorder: View {
     private func start() {
         recording = true
         pressed = []
-        InputRouter.shared.recording = true
+        gate = RecordingGate { stop() }
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { e in
             if e.type == .keyDown {
                 if e.keyCode == 53 && pressed.isEmpty { stop(); return nil }
@@ -98,6 +99,7 @@ struct ChordRecorder: View {
         if let m = monitor { NSEvent.removeMonitor(m) }
         monitor = nil
         recording = false
-        InputRouter.shared.recording = false
+        gate?.end()
+        gate = nil
     }
 }

@@ -101,6 +101,22 @@ enum KeyCodes {
         }
     }
 
+    /// Device-dependent (left/right) flag bit of a modifier key (NX_DEVICE*KEYMASK), or the shared
+    /// flag for keys that have no side bit (Caps Lock, fn).
+    static func deviceFlagMask(for code: UInt16) -> UInt64 {
+        switch code {
+        case 59: 0x01        // NX_DEVICELCTLKEYMASK
+        case 56: 0x02        // NX_DEVICELSHIFTKEYMASK
+        case 60: 0x04        // NX_DEVICERSHIFTKEYMASK
+        case 55: 0x08        // NX_DEVICELCMDKEYMASK
+        case 54: 0x10        // NX_DEVICERCMDKEYMASK
+        case 58: 0x20        // NX_DEVICELALTKEYMASK
+        case 61: 0x40        // NX_DEVICERALTKEYMASK
+        case 62: 0x2000      // NX_DEVICERCTLKEYMASK
+        default: modifierFlag(for: code).rawValue
+        }
+    }
+
     /// Keys sensible as a remap source/destination, sorted for UI pickers.
     static let pickable: [Key] = all.filter { !hidOnly.contains($0.code) }
     /// Same, for the key being remapped: also offers keys that exist only at the HID level.

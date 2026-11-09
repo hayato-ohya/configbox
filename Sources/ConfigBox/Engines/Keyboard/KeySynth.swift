@@ -4,6 +4,8 @@ import CoreGraphics
 /// Posts synthetic input events. Every event is tagged so our own tap ignores it.
 enum KeySynth {
     static let marker: Int64 = 0x4346_4258 // "CFBX"
+    /// Key events replayed by the chord engine: skip the remapper/chord engine but still run macros and triggers.
+    static let chordReplayMarker: Int64 = 0x4346_4243 // "CFBC"
 
     static func isSynthetic(_ e: CGEvent) -> Bool {
         e.getIntegerValueField(.eventSourceUserData) == marker
@@ -21,19 +23,24 @@ enum KeySynth {
         e.post(tap: .cghidEventTap)
     }
 
-    /// Types arbitrary text (any script) via Unicode key events, 20 characters per event.
+    /// Types arbitrary text (any script) via Unicode key events, at most 20 UTF-16 units per event,
+    /// never splitting a character (surrogate pair / grapheme cluster).
     static func type(_ text: String) {
-        let chars = Array(text.utf16)
-        var i = 0
-        while i < chars.count {
-            let chunk = Array(chars[i..<min(i + 20, chars.count)])
+        var chunks: [[UniChar]] = []
+        var current: [UniChar] = []
+        for ch in text {
+            let units = Array(String(ch).utf16)
+            if !current.isEmpty && current.count + units.count > 20 { chunks.append(current); current = [] }
+            current += units
+        }
+        if !current.isEmpty { chunks.append(current) }
+        for chunk in chunks {
             for down in [true, false] {
                 guard let e = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: down) else { continue }
                 e.keyboardSetUnicodeString(stringLength: chunk.count, unicodeString: chunk)
                 e.setIntegerValueField(.eventSourceUserData, value: marker)
                 e.post(tap: .cghidEventTap)
             }
-            i += 20
         }
     }
 

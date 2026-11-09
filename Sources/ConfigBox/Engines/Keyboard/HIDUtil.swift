@@ -18,6 +18,8 @@ enum HIDUtil {
     static let agentLabel = "com.hayato.configbox.hidmap"
     private static var watcher: IOHIDManager?
     private static var reapplyWork: DispatchWorkItem?
+    /// All hidutil writes run here, in order, so an older mapping can never land after a newer one.
+    private static let queue = DispatchQueue(label: "com.hayato.configbox.hidutil", qos: .userInitiated)
 
     // MARK: Apply / clear
 
@@ -38,12 +40,13 @@ enum HIDUtil {
         // Devices that previously had a specific mapping but no longer do must be reset to the global set.
         for dev in installedDevices.keys where devices[dev] == nil { cmds.append(command(global, matching: dev)) }
         cmds.append(command(global, matching: nil))
-        for (dev, maps) in devices { cmds.append(command(global + maps, matching: dev)) }
+        for (dev, maps) in devices { cmds.append(command(merged(global, maps), matching: dev)) }
         installedGlobal = global
         installedDevices = devices
-        DispatchQueue.global(qos: .userInitiated).async {
+        let keepAtLogin = ConfigStore.shared.config.general.keepHIDMappingsAtLogin
+        queue.async {
             for c in cmds { run(c) }
-            if ConfigStore.shared.config.general.keepHIDMappingsAtLogin { writeLaunchAgent() }
+            if keepAtLogin { writeLaunchAgent(global: global, devices: devices) }
         }
         if !devices.isEmpty { startWatching() } 
     }
@@ -68,8 +71,8 @@ enum HIDUtil {
 
     static func reapplyDevices() {
         guard !installedDevices.isEmpty else { return }
-        let cmds = installedDevices.map { command(installedGlobal + $0.value, matching: $0.key) }
-        DispatchQueue.global(qos: .userInitiated).async {
+        let cmds = installedDevices.map { command(merged(installedGlobal, $0.value), matching: $0.key) }
+        queue.async {
             for c in cmds { run(c) }
             Log.info("re-applied per-device HID mappings for \(cmds.count) device(s)")
         }
@@ -81,17 +84,18 @@ enum HIDUtil {
         cmds.append(command([], matching: nil))
         installedGlobal = []
         installedDevices = [:]
-        for c in cmds { run(c) }
+        queue.sync { for c in cmds { run(c) } }
     }
 
     /// Clears UserKeyMapping on every keyboard, including mappings made by other tools.
     static func clearEverything() {
         installedGlobal = []
         installedDevices = [:]
-        run(command([], matching: nil))
+        var cmds = [command([], matching: nil)]
         for d in HIDDevices.list() where d.kind == .keyboard {
-            run(command([], matching: DeviceRef(vendorId: d.vendorId, productId: d.productId, name: d.name)))
+            cmds.append(command([], matching: DeviceRef(vendorId: d.vendorId, productId: d.productId, name: d.name)))
         }
+        queue.sync { for c in cmds { run(c) } }
     }
 
     // MARK: Status
@@ -154,8 +158,12 @@ enum HIDUtil {
     static var launchAgentInstalled: Bool { FileManager.default.fileExists(atPath: launchAgentURL.path) }
 
     static func writeLaunchAgent() {
-        var lines = [shellLine(command(installedGlobal, matching: nil))]
-        for (dev, maps) in installedDevices { lines.append(shellLine(command(installedGlobal + maps, matching: dev))) }
+        writeLaunchAgent(global: installedGlobal, devices: installedDevices)
+    }
+
+    private static func writeLaunchAgent(global: [HIDMapping], devices: [DeviceRef: [HIDMapping]]) {
+        var lines = [shellLine(command(global, matching: nil))]
+        for (dev, maps) in devices { lines.append(shellLine(command(merged(global, maps), matching: dev))) }
         let plist: [String: Any] = [
             "Label": agentLabel,
             "ProgramArguments": ["/bin/sh", "-c", lines.joined(separator: "; ")],
@@ -177,6 +185,13 @@ enum HIDUtil {
     }
 
     // MARK: Helpers
+
+    /// A keyboard's full list: its own mappings replace global ones with the same source key
+    /// (hidutil honours only one mapping per source).
+    private static func merged(_ global: [HIDMapping], _ device: [HIDMapping]) -> [HIDMapping] {
+        let srcs = Set(device.map(\.src))
+        return global.filter { !srcs.contains($0.src) } + device
+    }
 
     private static func matchJSON(_ d: DeviceRef) -> String {
         guard d.vendorId == 0 else { return "{\"VendorID\":\(d.vendorId),\"ProductID\":\(d.productId)}" }

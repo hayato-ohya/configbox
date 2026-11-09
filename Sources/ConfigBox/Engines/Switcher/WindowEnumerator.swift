@@ -93,6 +93,7 @@ enum WindowEnumerator {
             AXUIElementSetMessagingTimeout(appEl, 0.15)
             guard let wins: [AXUIElement] = AX.attr(appEl, kAXWindowsAttribute) else { continue }
             for w in wins {
+                AXUIElementSetMessagingTimeout(w, 0.15)   // a hung app must not stall the event tap
                 var wid: CGWindowID = 0
                 guard cb_ax_window_id(w, &wid) == .success, wid != 0 else { continue }
                 if let ownIDs, !ownIDs.contains(wid) { continue }

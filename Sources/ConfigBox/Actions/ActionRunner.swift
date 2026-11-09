@@ -29,10 +29,22 @@ enum ActionRunner {
         case .typeText(let text):
             KeySynth.type(text)
         case .runAppleScript(let source):
+            // NSAppleScript is main-thread only, and running a script there would block the event tap.
+            // osascript runs it in its own process; Automation prompts are still attributed to ConfigBox.
             DispatchQueue.global(qos: .userInitiated).async {
-                var err: NSDictionary?
-                NSAppleScript(source: source)?.executeAndReturnError(&err)
-                if let err { Log.error("AppleScript error: \(err)") }
+                let p = Process()
+                p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+                p.arguments = ["-e", source]
+                p.standardOutput = FileHandle.nullDevice
+                let errPipe = Pipe()
+                p.standardError = errPipe
+                do { try p.run() } catch { Log.error("AppleScript could not start: \(error)"); return }
+                let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+                p.waitUntilExit()
+                if p.terminationStatus != 0 {
+                    let message = String(data: errData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    Log.error("AppleScript error: \(message)")
+                }
             }
         case .window(let w):
             WindowManager.perform(w)

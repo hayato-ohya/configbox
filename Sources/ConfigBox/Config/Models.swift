@@ -546,13 +546,22 @@ struct NRect: Codable, Hashable {
     }
 }
 
+struct DisplayIdentity: Codable, Hashable {
+    var vendor: UInt32
+    var model: UInt32
+    var serial: UInt32
+}
+
 /// BetterTouchTool-style custom snap area: drop a dragged window inside `trigger` to resize it to `target`.
 struct SnapArea: Codable, Identifiable, Hashable {
     var id = UUID()
     var name = L("Snap Area")
     var enabled = true
-    var displayID: UInt32
+    var displayID: UInt32               // CGDirectDisplayID: only valid on the Mac (and port) that saved it
     var displayName: String
+    /// The monitor's own vendor / model / serial (from its EDID), the same on every Mac. Nil in configs saved by
+    /// builds before 0.2.1; filled in once the area is matched to a connected display.
+    var display: DisplayIdentity? = nil
     var trigger: NRect
     var target: NRect? = nil            // nil = same as trigger
     var requireModifier: Modifiers = []

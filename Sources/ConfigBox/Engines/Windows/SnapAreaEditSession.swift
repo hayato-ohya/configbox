@@ -85,7 +85,7 @@ final class SnapAreaEditSession: NSObject, NSWindowDelegate, ObservableObject {
         let r = CGRect(x: f.midX - f.width * 0.2, y: f.midY - f.height * 0.2, width: f.width * 0.4, height: f.height * 0.4)
         let n = store.config.snapAreas.count + 1
         let area = SnapArea(name: L("Snap Area %lld", n), displayID: screen.displayID, displayName: screen.localizedName,
-                            trigger: NRect(rect: r, in: screen.frame), colorIndex: (n - 1) % SnapArea.colors.count)
+                            display: screen.displayIdentity, trigger: NRect(rect: r, in: screen.frame), colorIndex: (n - 1) % SnapArea.colors.count)
         if !isActive { begin() }          // take the snapshot before adding, so Esc removes the new area too
         store.config.snapAreas.append(area)
         DispatchQueue.main.async { [weak self] in self?.windows[area.id]?.makeKeyAndOrderFront(nil) }
@@ -179,8 +179,7 @@ final class SnapAreaEditSession: NSObject, NSWindowDelegate, ObservableObject {
         } else {
             a.trigger = n
             if a.displayID != screen.displayID {
-                a.displayID = screen.displayID
-                a.displayName = screen.localizedName
+                a.link(to: screen)
                 // Keep the custom target on the same display as the drop area.
                 if let t = targetWindows[a.id], let ts = t.screen, ts != screen { a.target = NRect(rect: t.frame, in: screen.frame) }
             }

@@ -30,6 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.apply(self.store.config)
         }
+        logDisplays()
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.logDisplays()
+            self?.relinkSnapAreas()
+        }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
             if self.store.config.general.trackpadEnabled { TrackpadEngine.shared.restart() }
@@ -104,7 +109,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TrackpadEngine.shared.stop()
     }
 
+    private func logDisplays() {
+        Log.info("displays: " + NSScreen.screens.map { s in
+            let d = s.displayIdentity
+            return "\(s.displayID) “\(s.localizedName)” \(d.vendor)/\(d.model)/\(d.serial)"
+        }.joined(separator: ", "))
+    }
+
+    /// Points snap areas at the right display after a restore on another Mac or a display change.
+    private func relinkSnapAreas() {
+        guard !SnapAreaEditSession.shared.isActive else { return }
+        var areas = store.config.snapAreas
+        if SnapArea.relink(&areas) { store.config.snapAreas = areas }
+    }
+
     private func apply(_ cfg: Config) {
+        relinkSnapAreas()
         statusBar.setVisible(cfg.general.showMenuBarIcon)
         InputRouter.shared.apply(config: cfg)
         let tp = TrackpadEngine.shared

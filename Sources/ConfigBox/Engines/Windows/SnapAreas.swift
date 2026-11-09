@@ -5,6 +5,10 @@ extension NSScreen {
         (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
     }
     static func screen(withDisplayID id: UInt32) -> NSScreen? { screens.first { $0.displayID == id } }
+    var displayIdentity: DisplayIdentity {
+        let id = displayID
+        return DisplayIdentity(vendor: CGDisplayVendorNumber(id), model: CGDisplayModelNumber(id), serial: CGDisplaySerialNumber(id))
+    }
     static var underMouse: NSScreen {
         let m = NSEvent.mouseLocation
         return screens.first { $0.frame.contains(m) } ?? main ?? screens[0]
@@ -12,6 +16,37 @@ extension NSScreen {
 }
 
 extension SnapArea {
+    mutating func link(to screen: NSScreen) {
+        displayID = screen.displayID
+        displayName = screen.localizedName
+        display = screen.displayIdentity
+    }
+
+    /// Display IDs are assigned per Mac (and can change with the port), so a restored or older config may point at
+    /// a display that is not connected, or at a different one that happens to have the same ID. Re-links each area
+    /// to the connected display with the same vendor / model / serial, or else the same name when that is unique.
+    /// Returns true if anything changed.
+    static func relink(_ areas: inout [SnapArea], screens: [NSScreen] = NSScreen.screens) -> Bool {
+        var changed = false
+        for i in areas.indices {
+            var a = areas[i]
+            if let s = screens.first(where: { $0.displayID == a.displayID }),
+               a.display.map({ $0 == s.displayIdentity }) ?? (s.localizedName == a.displayName) {
+                if a.display == nil { a.display = s.displayIdentity }        // same display: just remember its identity
+            } else if let want = a.display, let s = screens.first(where: { $0.displayIdentity == want }) {
+                a.link(to: s)
+            } else if case let named = screens.filter({ $0.localizedName == a.displayName }), named.count == 1 {
+                a.link(to: named[0])
+            }
+            if a != areas[i] {
+                Log.info("snap area “\(a.name)”: display \(areas[i].displayID) → \(a.displayID) (\(a.displayName))")
+                areas[i] = a
+                changed = true
+            }
+        }
+        return changed
+    }
+
     var nsColor: NSColor {
         let c = SnapArea.colors[min(max(colorIndex, 0), SnapArea.colors.count - 1)]
         return NSColor(calibratedRed: c.r, green: c.g, blue: c.b, alpha: 1)

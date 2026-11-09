@@ -56,7 +56,8 @@ struct KeyRecorder: View {
             if e.keyCode == 53 && mods.isEmpty { stop(); return nil }
             // Shift alone can't hold a switcher-style shortcut (it means "backwards"); keep waiting.
             if requireModifier && mods.subtracting(.shift).isEmpty { return nil }
-            combo = KeyCombo(keyCode: e.keyCode, modifiers: mods)
+            // ⇧ is not part of a switcher-style shortcut: holding it while switching means "backwards".
+            combo = KeyCombo(keyCode: e.keyCode, modifiers: requireModifier ? mods.subtracting(.shift) : mods)
             stop()
             return nil
         }

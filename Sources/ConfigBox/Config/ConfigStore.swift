@@ -79,6 +79,8 @@ final class ConfigStore: ObservableObject {
             }
         }
         if KeyCodes.impliesFn.contains(c.switcher.shortcut.keyCode) { c.switcher.shortcut.modifiers.remove(.function) }
+        // ⇧ means "backwards" while switching, so a shortcut recorded with it could never open the switcher.
+        c.switcher.shortcut.modifiers.remove(.shift)
     }
 
     private func scheduleSave() {

@@ -1,4 +1,5 @@
 /* Japanese. Keys are the English source text. */
+" and " = " と ";
 " copy" = " のコピー";
 " · custom window frame" = " · カスタムウィンドウ枠";
 "%@ (disconnected)" = "%@（未接続）";
@@ -67,6 +68,7 @@
 "Attached window frame" = "割り当て済みのウィンドウ枠";
 "Block scrolling while 3+ fingers are down (BTT-style)" = "3本指以上が触れている間はスクロールを止める（BTT 方式）";
 "Blocking only applies to finger counts that have a gesture trigger; two-finger scrolling is never touched. Reverse / speed here affect the trackpad and the Magic Mouse surface; the Mouse tab has the same controls for mouse wheels, and the Mouse tab’s excluded apps are honoured here too." = "スクロールを止めるのは、ジェスチャトリガーのある指の本数だけです。2本指スクロールには影響しません。ここの反転と速度はトラックパッドと Magic Mouse の表面に効きます。マウスホイール用の同じ設定は「マウス」タブにあり、そこの除外アプリはここにも適用されます。";
+"Both act on the same drop, and macOS then puts the window back to its previous size the next time you drag it. Turn the option off in System Settings › Desktop & Dock › Windows." = "同じドロップに両方が反応し、次にウインドウをドラッグしたときに macOS が元のサイズへ戻します。システム設定 ›「デスクトップと Dock」›「ウインドウ」でこの項目をオフにしてください。";
 "Border width" = "枠線の太さ";
 "Bottom" = "下";
 "Bottom Half" = "下半分";
@@ -302,6 +304,7 @@
 "Only windows of the current app" = "現在のアプリのウィンドウのみ";
 "Open %@" = "%@ を開く";
 "Open ConfigBox…" = "ConfigBox を開く…";
+"Open Desktop & Dock Settings…" = "「デスクトップと Dock」設定を開く…";
 "Open Trackpad Settings…" = "トラックパッド設定を開く…";
 "Open URL" = "URL を開く";
 "Optional. Only needed for Simultaneous Keys rules limited to one keyboard." = "任意です。キーボードを限定した同時押しルールにのみ必要です。";
@@ -509,6 +512,7 @@
 "iPhone Mirroring" = "iPhone ミラーリング";
 "idle" = "待機中";
 "immediately" = "すぐに";
+"macOS also tiles dragged windows. Turned on: %@." = "macOS 側でもドラッグしたウインドウをタイル表示します。オンの項目: %@。";
 "macOS also reacts to %@." = "macOS も %@ に反応します。";
 "macOS handles this gesture itself too. Disable the overlapping system gesture in System Settings › Trackpad to avoid double actions." = "このジェスチャには macOS 自身も反応します。二重実行を防ぐため、システム設定 › トラックパッドで重なるジェスチャをオフにしてください。";
 "off" = "オフ";
@@ -520,6 +524,8 @@
 "x %.2f  y %.2f  w %.2f  h %.2f (normalized)" = "x %.2f  y %.2f  w %.2f  h %.2f（正規化）";
 "zsh script" = "zsh スクリプト";
 "¥ → ` ~  and  _ (ろ) → \\ |" = "¥ → ` ~  と  _（ろ）→ \\ |";
+"“Drag windows to left or right edge of screen to tile”" = "「ウインドウを画面の左端または右端にドラッグしてタイル表示」";
+"“Drag windows to menu bar to fill screen”" = "「ウインドウをメニューバーにドラッグしてフルスクリーン表示」";
 "“%@” (area frame)" = "「%@」（エリアの枠）";
 "“%@” is not a ConfigBox settings file." = "「%@」は ConfigBox の設定ファイルではありません。";
 "“%@” window frame" = "「%@」のウィンドウ枠";

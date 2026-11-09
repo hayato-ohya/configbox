@@ -1,7 +1,18 @@
 import SwiftUI
+import Combine
 
 struct SnappingSettingsView: View {
     @EnvironmentObject var store: ConfigStore
+    @State private var systemTiling: SystemWindowTiling.Conflict?
+    private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
+    /// The macOS options that are on, by the names System Settings shows for them.
+    private func systemTilingNames(_ c: SystemWindowTiling.Conflict) -> String {
+        var names: [String] = []
+        if c.sideEdges { names.append(L("“Drag windows to left or right edge of screen to tile”")) }
+        if c.menuBar { names.append(L("“Drag windows to menu bar to fill screen”")) }
+        return names.joined(separator: L(" and "))
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -15,6 +26,17 @@ struct SnappingSettingsView: View {
                         Text("⌃ Control").tag(Modifiers.control)
                         Text("⌘ Command").tag(Modifiers.command)
                         Text("fn").tag(Modifiers.function)
+                    }
+                    if let c = systemTiling {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(L("macOS also tiles dragged windows. Turned on: %@.", systemTilingNames(c))).font(.caption.weight(.semibold))
+                                Text("Both act on the same drop, and macOS then puts the window back to its previous size the next time you drag it. Turn the option off in System Settings › Desktop & Dock › Windows.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Button("Open Desktop & Dock Settings…") { SystemWindowTiling.openSettings() }.controlSize(.small)
+                            }
+                        }
                     }
                 } header: { Text("Drag a window to a screen edge") } footer: {
                     Text("Drag a window by its title bar to an edge or corner of the screen. A preview shows the target area; release the mouse to resize. Keyboard tiling is available as a Window Management action in Keyboard Shortcuts.").formFooter()
@@ -55,12 +77,23 @@ struct SnappingSettingsView: View {
                 }
             }
             .formStyle(.grouped)
+            .onAppear { refreshSystemTiling() }
+            .onReceive(timer) { _ in refreshSystemTiling() }
+            .onChange(of: store.config.snapping.enabled) { _, _ in refreshSystemTiling() }
 
             Divider()
             ZonePreview(settings: store.config.snapping, areas: store.config.snapAreas)
                 .frame(width: 300)
                 .padding(24)
         }
+    }
+}
+
+extension SnappingSettingsView {
+    /// Polled while this tab is on screen, so the warning goes away once the option is switched off.
+    private func refreshSystemTiling() {
+        let now = SystemWindowTiling.conflict(with: store.config.snapping)
+        if now != systemTiling { systemTiling = now }
     }
 }
 

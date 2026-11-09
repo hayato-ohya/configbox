@@ -15,6 +15,9 @@ final class InputRouter {
     private(set) var keyboardEnabled = true
     private var treatJISAsANSI = false
     private var shortcutTriggers: [Trigger] = []
+    /// Keys whose press a macro or trigger took: their release is taken too, whatever modifiers are held
+    /// by then, and no other release is, so apps never get half of a key press.
+    private var swallowedKeys: Set<UInt16> = []
 
     private static let ansiKeyboardType: Int64 = 40
 
@@ -32,6 +35,7 @@ final class InputRouter {
         keyboardEnabled = config.general.keyboardEnabled
         treatJISAsANSI = keyboardEnabled && config.general.treatJISAsANSI
         shortcutTriggers = config.triggers.filter { $0.enabled && $0.kind.isShortcut }
+        swallowedKeys = []   // rules changed: a stray key up is harmless, a missing one is not
         // Keys the tap must keep seeing as themselves: never hand them out as routing keys.
         var reserved = Set(shortcutTriggers.compactMap { t -> UInt16? in
             if case .shortcut(let combo) = t.kind { return combo.keyCode } else { return nil }
@@ -107,25 +111,31 @@ final class InputRouter {
         }
         let remapNote = event.flags != flagsBefore ? "modifiers added by Mod-Tap key; " : ""
 
-        if type == .keyDown || type == .keyUp, let macro = matchMacro(event) {
-            if type == .keyDown {
-                let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
-                if !isRepeat || macro.repeats {
-                    let actions = macro.actions
-                    DispatchQueue.main.async { ActionRunner.runSequence(actions) }
-                }
+        let code = UInt16(truncatingIfNeeded: event.getIntegerValueField(.keyboardEventKeycode))
+        if type == .keyUp, swallowedKeys.remove(code) != nil {
+            return done(nil, remapNote + "consumed: release of a handled key")
+        }
+
+        if type == .keyDown, let macro = matchMacro(event) {
+            let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+            if !isRepeat { swallowedKeys.insert(code) }   // a repeat's first press went to the app, and so must its release
+            if !isRepeat || macro.repeats {
+                let actions = macro.actions
+                DispatchQueue.main.async { ActionRunner.runSequence(actions) }
             }
             return done(nil, remapNote + "consumed: key macro “\(macro.name)”")
         }
 
         if type == .keyDown, let trigger = matchTrigger(event) {
             let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+            if !isRepeat { swallowedKeys.insert(code) }
             if !isRepeat || trigger.action.repeatsWhileHeld {
                 let action = trigger.action
                 DispatchQueue.main.async { ActionRunner.run(action) }
             }
             return done(nil, remapNote + "consumed: trigger → \(trigger.action.display)")
         }
+        if type == .keyDown { swallowedKeys.remove(code) }   // this press reaches the app, so its release must too
         return done(event, remapNote + "pass")
     }
 
@@ -144,11 +154,10 @@ final class InputRouter {
         let code = UInt16(truncatingIfNeeded: event.getIntegerValueField(.keyboardEventKeycode))
         guard let candidates = remapper.keyActions[code] else { return nil }
         let mods = KeyCodes.modifiers(for: code, flags: event.flags)
-        let window: CFAbsoluteTime = event.type == .keyUp ? 30 : 0.5   // a key up may follow a long hold
         return candidates.first { m in
             guard m.from.modifiers == mods else { return false }
             guard remapper.trackedMacroIDs.contains(m.id), let dev = m.device else { return true }
-            guard let d = KeyDeviceTracker.shared.device(forKeyCode: code, within: window) else { return false }
+            guard let d = KeyDeviceTracker.shared.device(forKeyCode: code) else { return false }
             return d.vendorId == dev.vendorId && d.productId == dev.productId
         }
     }

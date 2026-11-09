@@ -154,6 +154,7 @@ private struct RemapRuleList: View {
                         RuleRow(icon: category.symbol,
                                 title: "\(KeyCodes.name(for: m.from))  →  \(KeyCodes.name(for: m.to))",
                                 subtitle: m.device?.name ?? L("All keyboards"),
+                                issues: ConfigValidation.issues(for: m, in: store.config),
                                 enabled: Binding(get: { m.enabled }, set: { v in set(\.simpleModifications, m.id) { $0.enabled = v } }))
                             .tag(m.id)
                             .contextMenu { menu(\.simpleModifications, m.id) }
@@ -165,6 +166,7 @@ private struct RemapRuleList: View {
                                 title: r.from.isUnset ? L("Not set") : r.from.display,
                                 subtitle: [r.actions.map(\.display).joined(separator: " → "), r.device?.name].compactMap { $0 }.joined(separator: " · "),
                                 name: r.name,
+                                issues: ConfigValidation.issues(for: r, in: store.config),
                                 enabled: Binding(get: { r.enabled }, set: { v in set(\.keyActionRules, r.id) { $0.enabled = v } }))
                             .tag(r.id)
                             .contextMenu { menu(\.keyActionRules, r.id) }
@@ -187,6 +189,7 @@ private struct RemapRuleList: View {
                                 title: KeyCodes.name(for: r.from),
                                 subtitle: modTapSummary(r),
                                 name: r.name,
+                                issues: ConfigValidation.issues(for: r, in: store.config),
                                 enabled: Binding(get: { r.enabled }, set: { v in set(\.complexRules, r.id) { $0.enabled = v } }))
                             .tag(r.id)
                             .contextMenu { menu(\.complexRules, r.id) }
@@ -321,6 +324,7 @@ private struct RuleRow: View {
     let title: String
     let subtitle: String
     var name: String = ""
+    var issues: [String] = []
     @Binding var enabled: Bool
 
     var body: some View {
@@ -332,6 +336,7 @@ private struct RuleRow: View {
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
+            IssueBadge(issues: issues)
             Toggle("", isOn: $enabled).toggleStyle(.switch).controlSize(.mini).labelsHidden()
         }
         .padding(.vertical, 3)
@@ -383,12 +388,14 @@ private struct DeviceRow: View {
 private struct SimpleEditor: View {
     @Binding var rule: SimpleModification
     let keyboards: [HIDDeviceInfo]
+    @EnvironmentObject var store: ConfigStore
     var body: some View {
         Form {
             Section("Mapping") {
                 LabeledContent("From") { KeyPicker(code: $rule.from, asSource: true).frame(maxWidth: 220) }
                 LabeledContent("To") { KeyPicker(code: $rule.to).frame(maxWidth: 220) }
                 Toggle("Enabled", isOn: $rule.enabled)
+                IssueNotes(issues: ConfigValidation.issues(for: rule, in: store.config))
             }
             Section {
                 DeviceRow(device: $rule.device, keyboards: keyboards)
@@ -403,6 +410,7 @@ private struct SimpleEditor: View {
 private struct MacroEditor: View {
     @Binding var rule: KeyActionRule
     let keyboards: [HIDDeviceInfo]
+    @EnvironmentObject var store: ConfigStore
     var body: some View {
         Form {
             Section("Rule") {
@@ -413,6 +421,7 @@ private struct MacroEditor: View {
                 KeyComboEditor(combo: $rule.from, asSource: true)
                 DeviceRow(device: $rule.device, keyboards: keyboards)
                 Toggle("Repeat while the key is held", isOn: $rule.repeats)
+                IssueNotes(issues: ConfigValidation.issues(for: rule, in: store.config))
             }
             Section("Actions, in order") {
                 ActionSequenceEditor(actions: $rule.actions, minimum: 1)
@@ -455,6 +464,7 @@ private struct ChordEditor: View {
 private struct ModTapEditor: View {
     @Binding var rule: ComplexRule
     let keyboards: [HIDDeviceInfo]
+    @EnvironmentObject var store: ConfigStore
     var body: some View {
         Form {
             Section("Rule") {
@@ -464,6 +474,7 @@ private struct ModTapEditor: View {
             Section("Key") {
                 LabeledContent("Key") { KeyPicker(code: $rule.from, asSource: true).frame(maxWidth: 220) }
                 DeviceRow(device: $rule.device, keyboards: keyboards)
+                IssueNotes(issues: ConfigValidation.issues(for: rule, in: store.config))
             }
             Section("Tap") {
                 Picker("On tap", selection: Binding(get: { rule.tapActions.isEmpty ? 0 : 1 }, set: { mode in

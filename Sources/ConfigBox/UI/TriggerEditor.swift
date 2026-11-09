@@ -16,6 +16,7 @@ struct TriggerEditorContainer: View {
 
 struct TriggerEditor: View {
     @Binding var trigger: Trigger
+    @EnvironmentObject var store: ConfigStore
 
     var body: some View {
         Form {
@@ -32,6 +33,7 @@ struct TriggerEditor: View {
                     MouseTriggerEditor(trigger: Binding(get: { m }, set: { trigger.kind = .mouse($0) }))
                 }
                 Toggle("Enabled", isOn: $trigger.enabled)
+                IssueNotes(issues: ConfigValidation.issues(for: trigger, in: store.config))
             }
             Section("Action") {
                 ActionEditor(action: $trigger.action)

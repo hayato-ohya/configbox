@@ -23,6 +23,7 @@
 "0 ms: the switch happens the moment the modifier is released." = "0 ms: 修飾キーを離した瞬間に切り替わります。";
 "A LaunchAgent re-applies the same hidutil mappings at login. Without it, macOS forgets UserKeyMapping on logout and ConfigBox re-applies it at launch." = "LaunchAgent がログイン時に同じ hidutil マッピングを再適用します。LaunchAgent がない場合、macOS はログアウト時に UserKeyMapping を破棄し、ConfigBox が起動時に再適用します。";
 "A left-button gesture needs a modifier, otherwise normal dragging would break." = "通常のドラッグを妨げないよう、左ボタンのジェスチャには修飾キーが必要です。";
+"A modifier key on its own cannot be a shortcut, so this trigger never runs. Use it together with another key, or make it a Mod-Tap key in Key Remapping." = "修飾キー単体はショートカットにできないため、このトリガーは実行されません。ほかのキーと組み合わせるか、「キー変換」で Mod-Tap キーにしてください。";
 "A single key (e.g. 英数 / かな, Escape, F-keys) works too: pick it from the list and leave all modifiers off." = "単一のキー（英数 / かな、Escape、ファンクションキーなど）も使えます。リストから選び、修飾キーはすべてオフにしてください。";
 "About" = "ConfigBox について";
 "Acceleration" = "加速";
@@ -51,6 +52,10 @@
 "Also 英数 → Left ⌘, かな → Right ⌘" = "さらに 英数 → 左 ⌘、かな → 右 ⌘";
 "Always" = "常に";
 "Always snap" = "常にスナップ";
+"Another Key → Actions rule uses the same key on the same keyboard. Only the first of them runs." = "同じキーボードの同じキーを使うキー → アクションのルールがもう1つあります。実行されるのは先頭のものだけです。";
+"Another Mod-Tap rule uses the same key on the same keyboard. Only one of them applies." = "同じキーボードの同じキーを使う Mod-Tap ルールがもう1つあります。有効になるのはどちらか一方だけです。";
+"Another simple modification remaps the same key on the same keyboard. Only one of them applies." = "同じキーボードの同じキーを変換するシンプルな変更がもう1つあります。有効になるのはどちらか一方だけです。";
+"Another trigger in this list uses the same input. Only the first of them runs." = "この一覧に同じ入力のトリガーがもう1つあります。実行されるのは先頭のものだけです。";
 "Any app" = "すべてのアプリ";
 "Any button, with the modifiers you want. Esc to cancel." = "任意のボタンを、必要な修飾キーと一緒に押してください。Esc でキャンセルします。";
 "App" = "アプリ";
@@ -449,10 +454,14 @@
 "Tapping term" = "タップ判定時間";
 "Tapping term is the longest hold still counted as a tap. Caps Lock and device-limited keys are rerouted through a spare F-key (F13–F20) at the HID level." = "タップ判定時間は、タップとして扱う最長の押下時間です。Caps Lock とデバイスを限定したキーは、HID レベルで予備キーを経由します。";
 "Text to type" = "入力するテキスト";
+"The Key → Actions rule “%@” uses the same key and runs instead of this trigger." = "キー → アクションのルール「%@」が同じキーを使っており、このトリガーの代わりに実行されます。";
+"The Mod-Tap rule “%@” takes this key first, so this rule never runs." = "Mod-Tap ルール「%@」がこのキーを先に受け取るため、このルールは実行されません。";
 "The engine runs only while at least one gesture trigger is enabled (or the Event Viewer’s Trackpad page is open). Tap-to-click, tracking speed and the system’s own gestures live in System Settings; turn off the system gesture that shares a finger count with your triggers to avoid double actions." = "エンジンは、ジェスチャトリガーが1つ以上有効なとき（またはイベントビューアの「トラックパッド」を開いているとき）だけ動作します。タップでクリック、軌跡の速さ、システムのジェスチャはシステム設定にあります。アクションの二重実行を防ぐため、トリガーと指の本数が重なるシステムジェスチャはオフにしてください。";
 "The multitouch framework is not available on this system." = "このシステムではマルチタッチフレームワークを利用できません。";
+"The window switcher uses this shortcut and takes it first, so this trigger never runs." = "このショートカットはウィンドウスイッチャーが先に受け取るため、このトリガーは実行されません。";
 "This area only appears while %@ is held during the drag." = "このエリアはドラッグ中に %@ を押している間だけ表示されます。";
 "This file contains %lld shell or AppleScript action(s). They run with your permissions when triggered, so restore it only if you trust its source." = "このファイルにはシェルまたは AppleScript のアクションが %lld 個含まれています。これらは実行時にあなたの権限で動くので、信頼できるファイルの場合だけ復元してください。";
+"This shortcut has no ⌘, ⌥, ⌃ or fn, so the key can no longer be typed while the trigger is on." = "このショートカットには ⌘・⌥・⌃・fn がないため、トリガーがオンの間はこのキーを入力できなくなります。";
 "Three-finger drag" = "3本指ドラッグ";
 "Threshold" = "しきい値";
 "Thumbnail height" = "サムネイルの高さ";
@@ -524,6 +533,7 @@
 "x %.2f  y %.2f  w %.2f  h %.2f (normalized)" = "x %.2f  y %.2f  w %.2f  h %.2f（正規化）";
 "zsh script" = "zsh スクリプト";
 "¥ → ` ~  and  _ (ろ) → \\ |" = "¥ → ` ~  と  _（ろ）→ \\ |";
+"“%@” uses the same key on the same keyboard. The two conflict, and only one of them works." = "「%@」が同じキーボードの同じキーを使っています。競合しており、動作するのはどちらか一方だけです。";
 "“Drag windows to left or right edge of screen to tile”" = "「ウインドウを画面の左端または右端にドラッグしてタイル表示」";
 "“Drag windows to menu bar to fill screen”" = "「ウインドウをメニューバーにドラッグしてフルスクリーン表示」";
 "“%@” (area frame)" = "「%@」（エリアの枠）";

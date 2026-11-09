@@ -34,6 +34,30 @@ struct DevicePicker: View {
     }
 }
 
+/// Problems ConfigValidation found with the entry being edited, one line each.
+struct IssueNotes: View {
+    let issues: [String]
+    var body: some View {
+        ForEach(issues, id: \.self) { issue in
+            Label(issue, systemImage: "exclamationmark.triangle.fill")
+                .font(.caption).foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// The same problems as a small marker for list rows; the sentences are in its tooltip.
+struct IssueBadge: View {
+    let issues: [String]
+    var body: some View {
+        if !issues.isEmpty {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .help(issues.joined(separator: "\n"))
+        }
+    }
+}
+
 struct ActionSequenceEditor: View {
     @Binding var actions: [Action]
     var minimum = 0

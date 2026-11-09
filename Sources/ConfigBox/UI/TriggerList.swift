@@ -121,6 +121,7 @@ struct TriggerRow: View {
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
+            IssueBadge(issues: ConfigValidation.issues(for: trigger, in: store.config))
             Toggle("", isOn: Binding(get: { trigger.enabled }, set: { v in
                 var t = trigger; t.enabled = v; store.update(t)
             }))

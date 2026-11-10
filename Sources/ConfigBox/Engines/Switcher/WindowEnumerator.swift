@@ -38,7 +38,7 @@ final class WindowItem: Identifiable, ObservableObject {
         AX.set(axWindow, kAXMainAttribute, kCFBooleanTrue)
         // 3. Fallback for anything the private API did not handle.
         if NSWorkspace.shared.frontmostApplication != app {
-            app.activate(options: [.activateIgnoringOtherApps])
+            app.activate()
         }
         Log.info("focus pid=\(app.processIdentifier) wid=\(id) '\(title)' skylight=\(err) raise=\(raise.rawValue) front=\(NSWorkspace.shared.frontmostApplication?.localizedName ?? "?")")
     }

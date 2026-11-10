@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 
 /// Trackpad › Settings: everything about how gestures are recognized and how the trackpad scrolls.
 struct TrackpadSettingsView: View {

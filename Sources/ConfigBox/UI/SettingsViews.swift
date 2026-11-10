@@ -179,6 +179,7 @@ struct SettingsView: View {
             }
 
             Section("About") {
+                LabeledContent("Version", value: AppVersion.display)
                 Text("ConfigBox combines trackpad gestures, keyboard shortcuts, key remapping and a window switcher in one dependency-free native app. The settings window is released from memory when closed; only the event tap and (if used) the multitouch listener stay resident.")
                     .font(.caption).foregroundStyle(.secondary)
             }

@@ -118,9 +118,13 @@ struct ActionEditor: View {
         case .none, .showWindowSwitcher:
             EmptyView()
         case .keyboardShortcut(let k):
-            LabeledContent("Key to send") {
+            // Not a LabeledContent: the editor is wider than the value column of a narrow form, and a value
+            // that does not fit is drawn sticking out of the row on the left.
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Key to send")
                 KeyComboEditor(combo: Binding(get: { k }, set: { action = .keyboardShortcut($0) }))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             Text("A single key (e.g. 英数 / かな, Escape, F-keys) works too: pick it from the list and leave all modifiers off.")
                 .font(.caption).foregroundStyle(.secondary)
         case .typeText(let t):

@@ -96,7 +96,7 @@ struct MainView: View {
             Divider()
             content
         }
-        .frame(minWidth: 860, minHeight: 520)
+        .frame(minWidth: 960, minHeight: 520)
     }
 
     private var header: some View {
@@ -108,6 +108,13 @@ struct MainView: View {
         }
         .padding(.top, 10)
         .padding(.bottom, 10)
+        // Always in view, so it is clear which build is running (the build number is in Settings › About).
+        .overlay(alignment: .trailing) {
+            Text(verbatim: "v\(AppVersion.short)")
+                .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                .padding(.trailing, 14)
+                .help(Text(verbatim: "ConfigBox \(AppVersion.display)"))
+        }
         .background(.bar)
     }
 
@@ -151,7 +158,7 @@ extension MainView {
             TriggerListView(state: state)
                 .frame(minWidth: 300, idealWidth: 380, maxHeight: .infinity)
             TriggerEditorContainer(state: state)
-                .frame(minWidth: 340, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 450, maxWidth: .infinity, maxHeight: .infinity)   // fits the key editor on one row
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

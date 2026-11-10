@@ -120,21 +120,32 @@ struct KeyComboEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                KeyRecorder(combo: $combo, allowClear: allowClear)
-                Text("or").foregroundStyle(.secondary)
-                Picker("", selection: Binding(get: { combo.isUnset ? UInt16.max : combo.keyCode },
-                                              set: { combo = KeyCombo(keyCode: $0, modifiers: combo.modifiers) })) {
-                    if combo.isUnset { Text("Choose key…").tag(UInt16.max) }
-                    ForEach(asSource ? KeyCodes.pickableSources : KeyCodes.pickable) { Text($0.name).tag($0.code) }
+            // One row when the column is wide enough, otherwise the key list moves below the recorder.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { recorder; orLabel; keyList }
+                VStack(alignment: .leading, spacing: 6) {
+                    recorder
+                    HStack(spacing: 8) { orLabel; keyList }
                 }
-                .labelsHidden().frame(width: 150)
             }
             HStack(spacing: 6) {
                 Text("Modifiers").font(.caption).foregroundStyle(.secondary)
                 modToggle("⌃", .control); modToggle("⌥", .option); modToggle("⇧", .shift); modToggle("⌘", .command); modToggle("fn", .function)
             }
         }
+    }
+
+    private var recorder: some View { KeyRecorder(combo: $combo, allowClear: allowClear) }
+
+    private var orLabel: some View { Text("or").foregroundStyle(.secondary).fixedSize() }
+
+    private var keyList: some View {
+        Picker("", selection: Binding(get: { combo.isUnset ? UInt16.max : combo.keyCode },
+                                      set: { combo = KeyCombo(keyCode: $0, modifiers: combo.modifiers) })) {
+            if combo.isUnset { Text("Choose key…").tag(UInt16.max) }
+            ForEach(asSource ? KeyCodes.pickableSources : KeyCodes.pickable) { Text($0.name).tag($0.code) }
+        }
+        .labelsHidden().frame(width: 150)
     }
 
     private func modToggle(_ t: String, _ m: Modifiers) -> some View {

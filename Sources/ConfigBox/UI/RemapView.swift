@@ -46,7 +46,7 @@ struct RemapView: View {
             RemapRuleList(state: state, keyboards: keyboards, karabiner: karabiner, unroutable: unroutable)
                 .frame(minWidth: 300, idealWidth: 380, maxHeight: .infinity)
             RemapEditorContainer(state: state, keyboards: keyboards)
-                .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 450, maxWidth: .infinity, maxHeight: .infinity)   // fits the key editor on one row
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear(perform: refreshDevices)

@@ -493,6 +493,7 @@
 "Type “%@”" = "「%@」を入力";
 "Typed as Unicode input, so any script works; the current app receives it as if entered on the keyboard." = "Unicode で入力するのでどの文字でも使えます。現在のアプリにはキーボードから入力したものとして届きます。";
 "Up" = "上";
+"Version" = "バージョン";
 "Vendor / Product ID" = "ベンダー / 製品 ID";
 "Visibility" = "表示";
 "Volume Down" = "音量を下げる";

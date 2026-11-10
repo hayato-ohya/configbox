@@ -29,6 +29,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let g = store.config.general
+        menu.addItem(withTitle: "ConfigBox \(AppVersion.display)", action: nil, keyEquivalent: "").isEnabled = false
+        menu.addItem(.separator())
         menu.addItem(withTitle: L("Open ConfigBox…"), action: #selector(openWindow), keyEquivalent: ",").target = self
         menu.addItem(withTitle: L("Event Viewer…"), action: #selector(openEventViewer), keyEquivalent: "").target = self
         menu.addItem(withTitle: L("HID Device Manager…"), action: #selector(openHIDManager), keyEquivalent: "").target = self

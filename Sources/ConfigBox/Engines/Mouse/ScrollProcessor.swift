@@ -10,7 +10,6 @@ final class ScrollProcessor {
     var mouseEnabled = true
     var trackpadReverse = false
     var trackpadSpeed: Double = 1.0
-    private var smoothWork: [DispatchWorkItem] = []
     private var hitCache: (point: CGPoint, time: CFAbsoluteTime, bundle: String?) = (.zero, 0, nil)
 
     private init() {}
@@ -33,7 +32,10 @@ final class ScrollProcessor {
             return e
         }
         guard mouseEnabled else { return e }
-        let app = appUnderPointer(e.location)
+        // Looking up the window under the pointer costs a window-list query, so only do it when the answer
+        // can matter: some app is excluded, or iPhone Mirroring is running and has settings of its own.
+        let mirroring = (settings.iPhoneMirroringReverse || settings.iPhoneMirroringSpeed != 1) && iPhoneMirroringIsRunning()
+        let app = !settings.scrollExcludedApps.isEmpty || mirroring ? appUnderPointer(e.location) : nil
         if let app, settings.scrollExcludedApps.contains(app) {
             return e   // this window keeps the system's own scrolling
         }
@@ -78,7 +80,7 @@ final class ScrollProcessor {
 
     /// iPhone Mirroring reads the HID event attached to a scroll event and ignores edited delta fields, and a
     /// fresh line-based event barely moves it. So it has its own reverse / speed settings, delivered as a phased
-    /// pixel burst (what smooth scrolling sends), which it turns into a swipe. Reverse off at 1× passes the
+    /// pixel burst per notch, which it turns into a swipe. Reverse off at 1× passes the
     /// wheel through untouched.
     private func processIPhoneMirroring(_ e: CGEvent) -> CGEvent? {
         let reverse = settings.iPhoneMirroringReverse, speed = settings.iPhoneMirroringSpeed
@@ -86,8 +88,19 @@ final class ScrollProcessor {
         var (v, h) = deltas(e)
         if reverse { v = -v; h = -h }
         let f = speed * Self.iPhoneMirroringBoost
-        smooth(v: v * f, h: h * f, at: e.location, flags: e.flags)
+        burst(v: v * f, h: h * f, at: e.location, flags: e.flags)
         return nil
+    }
+
+    private var mirroringCheck: (time: CFAbsoluteTime, running: Bool) = (0, false)
+
+    /// Whether iPhone Mirroring is running (checked at most every 2 s).
+    private func iPhoneMirroringIsRunning() -> Bool {
+        let now = CFAbsoluteTimeGetCurrent()
+        if now - mirroringCheck.time > 2 {
+            mirroringCheck = (now, !NSRunningApplication.runningApplications(withBundleIdentifier: Self.iPhoneMirroring).isEmpty)
+        }
+        return mirroringCheck.running
     }
 
     /// Bundle identifier of the app owning the topmost normal window under the pointer (cached ~150 ms).
@@ -120,29 +133,65 @@ final class ScrollProcessor {
         e.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: h * 10)
     }
 
-    /// Replaces one wheel notch with a short burst of pixel-based continuous scroll events (ease-out).
+    // MARK: Smooth scrolling
+
+    private static let pixelsPerLine = 40.0
+    private var smoothScroll = SmoothScroll()
+    private var smoothTimer: DispatchSourceTimer?
+    private var smoothLocation = CGPoint.zero
+    private var smoothFlags: CGEventFlags = []
+
+    /// Turns wheel notches into one eased, pixel-based scroll gesture (see SmoothScroll). The events go to
+    /// wherever the pointer was at the latest notch, with that notch's modifiers.
     private func smooth(v: Double, h: Double, at location: CGPoint, flags: CGEventFlags) {
+        smoothScroll.add(v: v * Self.pixelsPerLine, h: h * Self.pixelsPerLine)
+        smoothLocation = location
+        smoothFlags = flags
+        guard smoothTimer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now(), repeating: .milliseconds(8), leeway: .milliseconds(1))
+        timer.setEventHandler { [weak self] in self?.smoothTick() }
+        smoothTimer = timer
+        timer.resume()
+    }
+
+    private func smoothTick() {
+        if let step = smoothScroll.step() {
+            post(pixels: step.dv, step.dh, phase: step.phase.rawValue, at: smoothLocation, flags: smoothFlags)
+        }
+        if !smoothScroll.isActive {
+            smoothTimer?.cancel()
+            smoothTimer = nil
+        }
+    }
+
+    /// Replaces one wheel notch with its own short burst of pixel events (began … ended). iPhone Mirroring
+    /// turns exactly this shape into a swipe, so it keeps the burst instead of the merged gesture above.
+    private func burst(v: Double, h: Double, at location: CGPoint, flags: CGEventFlags) {
         let steps = 8
-        let totalV = v * 40, totalH = h * 40          // pixels per line
+        let totalV = v * Self.pixelsPerLine, totalH = h * Self.pixelsPerLine
         var sent = (0.0, 0.0)
         for i in 1...steps {
             let t = Double(i) / Double(steps)
             let eased = 1 - pow(1 - t, 3)
-            let targetV = totalV * eased, targetH = totalH * eased
-            let dv = targetV - sent.0, dh = targetH - sent.1
-            sent = (targetV, targetH)
-            let work = DispatchWorkItem {
-                guard let ev = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: Int32(dv.rounded()), wheel2: Int32(dh.rounded()), wheel3: 0) else { return }
-                ev.location = location
-                ev.flags = flags
-                ev.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
-                ev.setIntegerValueField(.scrollWheelEventScrollPhase, value: i == 1 ? 1 : (i == steps ? 4 : 2))
-                ev.setIntegerValueField(.eventSourceUserData, value: KeySynth.marker)
-                ev.post(tap: .cghidEventTap)
+            // Round the running total, not each step, so the pixels sent add up to the total.
+            let target = ((totalV * eased).rounded(), (totalH * eased).rounded())
+            let dv = Int32(target.0 - sent.0), dh = Int32(target.1 - sent.1)
+            sent = target
+            let phase: Int64 = i == 1 ? 1 : (i == steps ? 4 : 2)
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(12 * (i - 1))) { [weak self] in
+                self?.post(pixels: dv, dh, phase: phase, at: location, flags: flags)
             }
-            smoothWork.append(work)
-            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(12 * (i - 1)), execute: work)
         }
-        if smoothWork.count > 64 { smoothWork.removeFirst(smoothWork.count - 64) }
+    }
+
+    private func post(pixels dv: Int32, _ dh: Int32, phase: Int64, at location: CGPoint, flags: CGEventFlags) {
+        guard let ev = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: dv, wheel2: dh, wheel3: 0) else { return }
+        ev.location = location
+        ev.flags = flags
+        ev.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+        ev.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
+        ev.setIntegerValueField(.eventSourceUserData, value: KeySynth.marker)
+        ev.post(tap: .cghidEventTap)
     }
 }

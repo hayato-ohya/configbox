@@ -26,5 +26,10 @@ let package = Package(
                 .linkedFramework("IOKit"),
             ]
         ),
+        .testTarget(
+            name: "ConfigBoxTests",
+            dependencies: ["ConfigBox"],
+            path: "Tests/ConfigBoxTests"
+        ),
     ]
 )

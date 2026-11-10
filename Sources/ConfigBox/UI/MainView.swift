@@ -108,13 +108,6 @@ struct MainView: View {
         }
         .padding(.top, 10)
         .padding(.bottom, 10)
-        // Always in view, so it is clear which build is running (the build number is in Settings › About).
-        .overlay(alignment: .trailing) {
-            Text(verbatim: "v\(AppVersion.short)")
-                .font(.caption).monospacedDigit().foregroundStyle(.secondary)
-                .padding(.trailing, 14)
-                .help(Text(verbatim: "ConfigBox \(AppVersion.display)"))
-        }
         .background(.bar)
     }
 

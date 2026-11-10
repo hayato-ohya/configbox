@@ -2,10 +2,11 @@ import AppKit
 
 /// The running app's version as shown to the user, e.g. “0.3.3 (7)”.
 enum AppVersion {
-    static let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
     static let display: String = {
-        guard let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String else { return short }
-        return "\(short) (\(build))"
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        guard let build = info?["CFBundleVersion"] as? String else { return version }
+        return "\(version) (\(build))"
     }()
 }
 

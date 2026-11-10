@@ -9,6 +9,8 @@ final class MouseEngine {
     private(set) var triggers: [Trigger] = []
     /// Buttons 4 / 5 send ⌘[ / ⌘] (back / forward) when no trigger claims them.
     var backForwardButtons = false
+    /// Apps that ignore buttons 4 / 5: there the buttons send ⌘[ / ⌘] even with the option above off.
+    var backForwardKeyApps: Set<String> = []
     private var hasClick = false, hasScroll = false, hasGesture = false
 
     // Gesture / click state
@@ -34,7 +36,7 @@ final class MouseEngine {
         }
     }
 
-    var isEmpty: Bool { triggers.isEmpty && !backForwardButtons }
+    var isEmpty: Bool { triggers.isEmpty && !backForwardButtons && backForwardKeyApps.isEmpty }
 
     // MARK: Event handling (returns true when consumed)
 
@@ -89,9 +91,10 @@ final class MouseEngine {
             run(t)
             return true
         }
-        if backForwardButtons, mods.isEmpty, b == .button4 || b == .button5 {
+        if mods.isEmpty, b == .button4 || b == .button5,
+           backForwardButtons || backForwardKeyApps.contains(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "") {
             swallowUpFor = b
-            KeySynth.tap(KeyCombo(keyCode: b == .button4 ? 33 : 30, modifiers: [.command]))   // ⌘[ / ⌘]
+            KeySynth.navigate(forward: b == .button5, usesKeys: true)   // ⌘[ / ⌘]
             return true
         }
         // A double-click trigger without a single-click one: let the first click through, catch the second.

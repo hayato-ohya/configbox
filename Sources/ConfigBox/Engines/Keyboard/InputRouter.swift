@@ -34,6 +34,7 @@ final class InputRouter {
     func apply(config: Config) {
         keyboardEnabled = config.general.keyboardEnabled
         treatJISAsANSI = keyboardEnabled && config.general.treatJISAsANSI
+        KeySynth.treatJISAsANSI = treatJISAsANSI
         shortcutTriggers = config.triggers.filter { $0.enabled && $0.kind.isShortcut }
         swallowedKeys = []   // rules changed: a stray key up is harmless, a missing one is not
         // Keys the tap must keep seeing as themselves: never hand them out as routing keys.
@@ -48,6 +49,7 @@ final class InputRouter {
         chords.apply(rules: keyboardEnabled ? config.chordRules : [])
         MouseEngine.shared.apply(triggers: config.general.mouseEnabled ? config.triggers : [])
         MouseEngine.shared.backForwardButtons = config.general.mouseEnabled && config.mouse.backForwardButtons
+        MouseEngine.shared.backForwardKeyApps = config.general.mouseEnabled ? Set(config.mouse.backForwardKeyApps) : []
         ScrollProcessor.shared.settings = config.general.mouseEnabled ? config.mouse : MouseSettings()
         ScrollProcessor.shared.mouseEnabled = config.general.mouseEnabled
         ScrollProcessor.shared.trackpadReverse = config.general.trackpadEnabled && config.general.trackpadReverseScroll

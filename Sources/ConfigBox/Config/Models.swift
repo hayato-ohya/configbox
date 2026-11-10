@@ -606,8 +606,16 @@ struct MouseSettings: Codable {
     /// iPhone Mirroring ignores edits to scroll events, so it gets its own settings (see ScrollProcessor).
     var iPhoneMirroringReverse = true
     var iPhoneMirroringSpeed: Double = 1.0
+    /// Apps that ignore the mouse's back / forward buttons (Finder and most AppKit apps do). When one of them
+    /// is frontmost, buttons 4 / 5 and the Mouse Back / Forward actions send ⌘[ / ⌘] instead of a click.
+    var backForwardKeyApps: [String] = MouseSettings.defaultBackForwardKeyApps
 
     static let defaultScrollExclusions: [String] = []
+    static let defaultBackForwardKeyApps = ["com.apple.finder"]
+
+    func sendsKeysForBackForward(in bundleId: String?) -> Bool {
+        bundleId.map(backForwardKeyApps.contains) ?? false
+    }
 
     init() {}
     init(from decoder: Decoder) throws {
@@ -625,6 +633,7 @@ struct MouseSettings: Codable {
         backForwardButtons = try c.decodeIfPresent(Bool.self, forKey: .backForwardButtons) ?? backForwardButtons
         iPhoneMirroringReverse = try c.decodeIfPresent(Bool.self, forKey: .iPhoneMirroringReverse) ?? iPhoneMirroringReverse
         iPhoneMirroringSpeed = try c.decodeIfPresent(Double.self, forKey: .iPhoneMirroringSpeed) ?? iPhoneMirroringSpeed
+        backForwardKeyApps = try c.decodeIfPresent([String].self, forKey: .backForwardKeyApps) ?? backForwardKeyApps
     }
 
     var scrollActive: Bool { reverseVertical || reverseHorizontal || scrollSpeed != 1 || smoothScrolling || shiftScrollsHorizontally }

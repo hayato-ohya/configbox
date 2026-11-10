@@ -36,6 +36,8 @@ open build/ConfigBox.app
 
 要件: macOS 14 以降、Xcode 15 以降（Swift 5.9+）。外部パッケージはありません。ビルドしたマシンのアーキテクチャ用のアプリができます。
 
+単体テストは `swift test` で実行します（設定の読み込みと検証、スムーズスクロールの計算、ウィンドウ整列の座標など、入力や画面に触れない部分が対象です）。
+
 ### 署名について（重要）
 
 Accessibility / 画面収録の許可はコード署名に紐づきます。ad-hoc 署名だとビルドのたびに許可をやり直すことになるため、
@@ -106,6 +108,7 @@ HID Device Manager はこの層の「有効化 / 無効化 / 状態確認 / デ�
 - HID レベルの単純置換はセキュア入力欄（パスワード欄）でも効きますが、イベントタップで処理する二役キーやショートカットはセキュア入力中は届きません。
 - ウィンドウスナップは「ドラッグ開始後にウィンドウ位置が実際に動いたか」で判定するため、テキスト選択やスクロールバーのドラッグでは発動しません。大きさが変わるドラッグ（ウィンドウのリサイズ）でも発動しません。
 - macOS 15 以降の「システム設定 › デスクトップと Dock › ウインドウ」にある「ウインドウを画面の左端または右端にドラッグしてタイル表示」「ウインドウをメニューバーにドラッグしてフルスクリーン表示」がオンだと、同じドロップに macOS も反応し、次にそのウィンドウをドラッグしたときに元の大きさへ戻されます。スナップを使う場合はオフにしてください（オンのときは「スナップ」タブに警告と設定を開くボタンが出ます）。
+- Finder など多くのアプリは、マウスの戻る / 進むボタン（ボタン 4 / 5）に反応しません。「マウス › 設定 › ボタン」の一覧にあるアプリ（初期値は Finder）が最前面のときは、ボタン 4 / 5 と「マウスの戻る」「マウスの進む」アクションが、クリックの代わりに ⌘[ / ⌘] を送ります。
 - 動かないショートカット（修飾キー単体など）や、同じキーを取り合うルールは、一覧に警告マークが付き、編集欄に理由が表示されます。保存や実行は止めません。
 - MultitouchSupport は Apple の非公開フレームワークです（BTT 等も同じものを使用）。将来の macOS で利用できなくなった場合はトラックパッド機能のみ無効になります。
 
@@ -151,6 +154,8 @@ open build/ConfigBox.app
 ```
 
 Requires macOS 14 or later and Xcode 15 or later (Swift 5.9+). There are no external packages. The app is built for the architecture of the machine that builds it.
+
+Run the unit tests with `swift test`. They cover the parts that touch neither input nor the screen: loading and validating the configuration, the smooth scrolling arithmetic, window tiling geometry and the like.
 
 ### Code signing (important)
 
@@ -221,6 +226,7 @@ HID Device Manager activates, deactivates, inspects, applies per device and pers
 - HID-level simple remaps work in secure input fields (password fields), but dual-role keys and shortcuts handled in the event tap do not reach them during secure input.
 - Window snapping checks whether the window actually moved after the drag started, so selecting text or dragging a scroll bar does not trigger it. Neither does a drag that changes the window's size (resizing it).
 - On macOS 15 and later, with "Drag windows to left or right edge of screen to tile" or "Drag windows to menu bar to fill screen" on in System Settings › Desktop & Dock › Windows, macOS acts on the same drop too and puts the window back to its previous size the next time you drag it. Turn them off when you use snapping (while one is on, the Snapping tab shows a warning with a button that opens those settings).
+- Finder and many other apps ignore a mouse's back / forward buttons (buttons 4 / 5). While an app in the list under Mouse › Settings › Buttons (Finder by default) is frontmost, buttons 4 / 5 and the Mouse Back / Mouse Forward actions send ⌘[ / ⌘] instead of a click.
 - Shortcuts that cannot fire (such as a modifier key on its own) and rules that compete for the same key get a warning mark in the list and an explanation in the editor. Nothing is blocked from being saved or run.
 - MultitouchSupport is a private Apple framework (BTT and others use it too). If a future macOS removes it, only the trackpad features are disabled.
 

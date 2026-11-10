@@ -173,7 +173,7 @@
 "Finish" = "終了";
 "Finish Editing" = "編集を終了";
 "Flags" = "フラグ";
-"For anything else (remapping a button to another key, double-click actions, button gestures) use the Triggers tab." = "それ以外（ボタンを別のキーに割り当てる、ダブルクリックのアクション、ボタンジェスチャなど）は「トリガー」タブで設定します。";
+"Finder and many other apps ignore a mouse's back / forward buttons. While an app in the list is frontmost, buttons 4 / 5 and the Mouse Back / Mouse Forward actions send ⌘[ / ⌘] to it instead; other apps get the button click. For anything else (remapping a button to another key, double-click actions, button gestures) use the Triggers tab." = "Finder をはじめ多くのアプリは、マウスの戻る / 進むボタンに反応しません。一覧のアプリが最前面にある間は、ボタン 4 / 5 と「マウスの戻る」「マウスの進む」アクションが、クリックの代わりに ⌘[ / ⌘] を送ります。それ以外のアプリにはボタンのクリックを送ります。その他（ボタンを別のキーに割り当てる、ダブルクリックのアクション、ボタンジェスチャなど）は「トリガー」タブで設定します。";
 "Frame of a deleted snap area" = "削除されたスナップエリアの枠";
 "Frame of “%@”" = "「%@」の枠";
 "From" = "変更元";
@@ -390,6 +390,7 @@
 "Select a Trigger" = "トリガーを選択";
 "Send %@" = "%@ を送信";
 "Send Keyboard Shortcut" = "キーボードショートカットを送信";
+"Send ⌘[ / ⌘] for back / forward in these apps" = "これらのアプリでは戻る / 進むに ⌘[ / ⌘] を送る";
 "Send a key" = "キーを送信";
 "Sensitivity" = "感度";
 "Settings" = "設定";

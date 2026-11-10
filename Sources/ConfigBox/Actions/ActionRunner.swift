@@ -101,8 +101,8 @@ enum SystemActions {
         case .nextTrack: KeySynth.mediaKey(.next)
         case .previousTrack: KeySynth.mediaKey(.previous)
         case .middleClick: KeySynth.middleClick()
-        case .mouseBack: KeySynth.mouseButtonClick(3)
-        case .mouseForward: KeySynth.mouseButtonClick(4)
+        case .mouseBack: navigate(forward: false)
+        case .mouseForward: navigate(forward: true)
         case .hideFrontApp: NSWorkspace.shared.frontmostApplication?.hide()
         case .quitFrontApp: NSWorkspace.shared.frontmostApplication?.terminate()
         case .closeWindow: WindowManager.pressButton(kAXCloseButtonAttribute)
@@ -111,6 +111,12 @@ enum SystemActions {
         case .toggleDarkMode:
             ActionRunner.run(.runAppleScript("tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode"))
         }
+    }
+
+    /// Mouse Back / Forward: a click of button 4 / 5, or ⌘[ / ⌘] in the apps listed as ignoring those buttons.
+    private static func navigate(forward: Bool) {
+        let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        KeySynth.navigate(forward: forward, usesKeys: ConfigStore.shared.config.mouse.sendsKeysForBackForward(in: front))
     }
 
     private static func openMissionControl(args: [String]) {

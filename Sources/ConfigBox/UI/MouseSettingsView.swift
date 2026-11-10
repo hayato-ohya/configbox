@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// Mouse › Settings: scrolling, pointer speed / acceleration, convenience buttons (mice only).
 struct MouseSettingsView: View {
@@ -92,13 +93,36 @@ struct MouseSettingsView: View {
 
             Section {
                 Toggle("Buttons 4 / 5 go back / forward (⌘[ / ⌘])", isOn: $store.config.mouse.backForwardButtons)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Send ⌘[ / ⌘] for back / forward in these apps").font(.callout)
+                    ForEach(store.config.mouse.backForwardKeyApps, id: \.self) { id in
+                        HStack(spacing: 8) {
+                            Image(nsImage: AppIcons.icon(for: id)).resizable().frame(width: 18, height: 18)
+                            Text(AppIcons.displayNameShort(for: id))
+                            Text(id).font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            IconButton(systemName: "minus.circle", help: "Remove") { store.config.mouse.backForwardKeyApps.removeAll { $0 == id } }
+                        }
+                    }
+                    Menu {
+                        ForEach(AppIcons.runningApps()) { app in Button(app.name) { addBackForwardKeyApp(app.bundleId) } }
+                        Divider()
+                        Button("Choose Application…") { if let app = AppIcons.chooseApp() { addBackForwardKeyApp(app.bundleId) } }
+                    } label: { Label("Add App", systemImage: "plus") }
+                    .fixedSize()
+                }
+                .padding(.vertical, 4)
             } header: { Text("Buttons") } footer: {
-                Text("For anything else (remapping a button to another key, double-click actions, button gestures) use the Triggers tab.").formFooter()
+                Text("Finder and many other apps ignore a mouse's back / forward buttons. While an app in the list is frontmost, buttons 4 / 5 and the Mouse Back / Mouse Forward actions send ⌘[ / ⌘] to it instead; other apps get the button click. For anything else (remapping a button to another key, double-click actions, button gestures) use the Triggers tab.").formFooter()
             }
         }
         .formStyle(.grouped)
         .onAppear { devices = PointerSettings.shared.devices() }
         .onReceive(timer) { _ in devices = PointerSettings.shared.devices() }
+    }
+
+    private func addBackForwardKeyApp(_ id: String) {
+        if !store.config.mouse.backForwardKeyApps.contains(id) { store.config.mouse.backForwardKeyApps.append(id) }
     }
 
     private func addExcluded(_ id: String) {

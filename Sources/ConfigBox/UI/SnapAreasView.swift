@@ -249,6 +249,11 @@ struct SnapAreaForm: View {
                     Text("Any app").tag("")
                     ForEach(store.config.apps) { Text($0.name).tag($0.bundleId) }
                     ForEach(AppIcons.runningApps().filter { r in !store.config.apps.contains { $0.bundleId == r.bundleId } }) { Text($0.name).tag($0.bundleId) }
+                    // The area's app may be neither in the app list nor running: keep it selectable and visible.
+                    if let id = area.appBundleId, !store.config.apps.contains(where: { $0.bundleId == id }),
+                       !AppIcons.runningApps().contains(where: { $0.bundleId == id }) {
+                        Text(AppIcons.displayNameShort(for: id)).tag(id)
+                    }
                 }.labelsHidden().frame(maxWidth: 260)
             }
             GridRow {

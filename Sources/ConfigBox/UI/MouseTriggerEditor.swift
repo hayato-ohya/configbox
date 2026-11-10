@@ -123,7 +123,6 @@ struct MouseRecorder: View {
         gate = RecordingGate { stop() }
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown]) { e in
             if e.type == .keyDown { if e.keyCode == 53 { stop() }; return e }
-            // Ignore the click that lands on the Record button itself (left, no modifiers) when it started recording.
             let mods = Modifiers(cgFlags: e.cgEvent?.flags ?? [])
             guard let button = MouseButton(rawValue: e.buttonNumber) else { return e }
             onRecord(button, mods)

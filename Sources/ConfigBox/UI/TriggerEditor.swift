@@ -204,7 +204,7 @@ struct CycleStepsEditor: View {
             ForEach(Array(steps.enumerated()), id: \.offset) { i, step in
                 HStack(spacing: 8) {
                     Text("\(i + 1).").foregroundStyle(.secondary).frame(width: 22, alignment: .trailing)
-                    Picker("", selection: Binding(get: { step }, set: { steps[i] = $0 })) {
+                    Picker("", selection: Binding(get: { step }, set: { if steps.indices.contains(i) { steps[i] = $0 } })) {
                         ForEach(WindowAction.allCases) { Text($0.title).tag(WindowTarget.tile($0)) }
                         if !store.config.snapAreas.isEmpty {
                             Divider()

@@ -105,6 +105,8 @@ private struct FrontmostAppPage: View {
             AXUIElementSetMessagingTimeout(el, 0.2)
             if let w: AXUIElement = AX.attr(el, kAXFocusedWindowAttribute) {
                 windowTitle = AX.attr(w, kAXTitleAttribute) ?? ""
+            } else {
+                windowTitle = ""   // no focused window: do not keep showing the previous app's title
             }
         }
     }

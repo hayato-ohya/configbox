@@ -90,12 +90,17 @@ enum HIDUtil {
         }
         queue.async {
             var lost: [String] = []
+            var applied = 0
             for (dev, maps) in targets {
-                let now = installedMappings(output(["property", "--matching", matchJSON(dev), "--get", "UserKeyMapping"]))
+                let text = output(["property", "--matching", matchJSON(dev), "--get", "UserKeyMapping"])
+                // No service matched: the keyboard is not connected, so there is nothing to set or to have lost.
+                guard text.contains("UserKeyMapping") else { continue }
+                let now = installedMappings(text)
                 if Set(now) != Set(maps) { lost.append("\(dev.name) (had \(now.count), expected \(maps.count))") }
                 run(command(maps, matching: dev))
+                applied += 1
             }
-            Log.info("re-applied HID mappings to \(targets.count) keyboard(s) [\(reason)]"
+            Log.info("re-applied HID mappings to \(applied) connected keyboard(s) [\(reason)]"
                      + (lost.isEmpty ? "" : "; mapping had been lost on: " + lost.joined(separator: ", ")))
         }
     }

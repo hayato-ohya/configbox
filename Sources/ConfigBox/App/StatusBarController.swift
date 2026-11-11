@@ -46,6 +46,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         menu.addItem(withTitle: L("Reload Config File"), action: #selector(reload), keyEquivalent: "").target = self
         menu.addItem(.separator())
+        menu.addItem(withTitle: L("About ConfigBox"), action: #selector(showAbout), keyEquivalent: "").target = self
         menu.addItem(withTitle: L("Quit ConfigBox"), action: #selector(quit), keyEquivalent: "q").target = self
     }
 
@@ -65,5 +66,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     @objc private func toggleSwitcher() { store.config.switcher.enabled.toggle() }
     @objc private func openAccessibility() { Permissions.openAccessibilitySettings() }
     @objc private func reload() { store.load() }
+    @objc func showAbout() {
+        // An accessory app is not active while its status menu is used, so the panel would open behind other windows.
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationVersion: AppVersion.short, .version: AppVersion.build ?? ""])
+    }
     @objc private func quit() { NSApp.terminate(nil) }
 }

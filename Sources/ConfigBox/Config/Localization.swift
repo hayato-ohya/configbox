@@ -1,13 +1,9 @@
 import AppKit
 
-/// The running app's version as shown to the user, e.g. “0.3.3 (7)”.
+/// The running app's version, shown in the About panel opened from the menu bar menu.
 enum AppVersion {
-    static let display: String = {
-        let info = Bundle.main.infoDictionary
-        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
-        guard let build = info?["CFBundleVersion"] as? String else { return version }
-        return "\(version) (\(build))"
-    }()
+    static let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+    static let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
 }
 
 /// Looks up a UI string that is held in a `String`. SwiftUI only localizes literals passed directly to

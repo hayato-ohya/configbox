@@ -48,19 +48,20 @@ enum HIDUtil {
             for c in cmds { run(c) }
             if keepAtLogin { writeLaunchAgent(global: global, devices: devices) }
         }
-        if !devices.isEmpty { startWatching() } 
+        if !global.isEmpty || !devices.isEmpty { startWatching() }
     }
 
-    /// Per-device UserKeyMapping is a property of the live HID service: when a keyboard re-enumerates
-    /// (sleep/wake, dongle reconnect, USB hub resets) the new service starts without it. Watch for
-    /// keyboard services appearing and re-apply the device mappings shortly after.
+    /// UserKeyMapping is a property of the live HID service: when a keyboard re-enumerates (sleep/wake,
+    /// Bluetooth or dongle reconnect, USB hub resets) the new service can start without it. This holds
+    /// for the global mappings too (e.g. a Ctrl ⇄ Cmd swap on a Bluetooth keyboard that went to sleep),
+    /// so watch for keyboard services appearing and re-apply everything shortly after.
     private static func startWatching() {
         guard watcher == nil else { return }
         let m = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         IOHIDManagerSetDeviceMatching(m, [kIOHIDDeviceUsagePageKey: 1, kIOHIDDeviceUsageKey: 6] as CFDictionary)
         IOHIDManagerRegisterDeviceMatchingCallback(m, { _, _, _, _ in
             HIDUtil.reapplyWork?.cancel()
-            let w = DispatchWorkItem { HIDUtil.reapplyDevices() }
+            let w = DispatchWorkItem { HIDUtil.reapply(reason: "keyboard connected") }
             HIDUtil.reapplyWork = w
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: w)
         }, nil)
@@ -69,13 +70,38 @@ enum HIDUtil {
         watcher = m
     }
 
-    static func reapplyDevices() {
-        guard !installedDevices.isEmpty else { return }
-        let cmds = installedDevices.map { command(merged(installedGlobal, $0.value), matching: $0.key) }
-        queue.async {
-            for c in cmds { run(c) }
-            Log.info("re-applied per-device HID mappings for \(cmds.count) device(s)")
+    /// Re-installs the current mappings on every connected keyboard: its own list where it has
+    /// device-specific rules, the global list otherwise. Logs keyboards whose mapping had been lost,
+    /// so a reset by the system shows up in ConfigBox.log.
+    static func reapply(reason: String) {
+        guard isActive else { return }
+        let global = installedGlobal, devices = installedDevices
+        var targets: [(DeviceRef, [HIDMapping])] = []
+        var seen = Set<String>()
+        for d in HIDDevices.keyboards() {
+            let ref = DeviceRef(vendorId: d.vendorId, productId: d.productId, name: d.name)
+            guard seen.insert(matchJSON(ref)).inserted else { continue }
+            let own = devices.first { sameDevice($0.key, ref) }
+            targets.append((own?.key ?? ref, own.map { merged(global, $0.value) } ?? global))
         }
+        // Configured keyboards that are not listed (e.g. matched by a name HIDDevices filters out).
+        for (dev, maps) in devices where !targets.contains(where: { sameDevice($0.0, dev) }) {
+            targets.append((dev, merged(global, maps)))
+        }
+        queue.async {
+            var lost: [String] = []
+            for (dev, maps) in targets {
+                let now = installedMappings(output(["property", "--matching", matchJSON(dev), "--get", "UserKeyMapping"]))
+                if Set(now) != Set(maps) { lost.append("\(dev.name) (had \(now.count), expected \(maps.count))") }
+                run(command(maps, matching: dev))
+            }
+            Log.info("re-applied HID mappings to \(targets.count) keyboard(s) [\(reason)]"
+                     + (lost.isEmpty ? "" : "; mapping had been lost on: " + lost.joined(separator: ", ")))
+        }
+    }
+
+    private static func sameDevice(_ a: DeviceRef, _ b: DeviceRef) -> Bool {
+        a.vendorId == b.vendorId && a.productId == b.productId && (a.vendorId != 0 || a.name == b.name)
     }
 
     static func clear() {

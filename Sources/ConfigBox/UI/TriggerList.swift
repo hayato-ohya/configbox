@@ -123,7 +123,8 @@ struct TriggerRow: View {
             Spacer()
             IssueBadge(issues: ConfigValidation.issues(for: trigger, in: store.config))
             Toggle("", isOn: Binding(get: { trigger.enabled }, set: { v in
-                var t = trigger; t.enabled = v; store.update(t)
+                // By id, not by writing back `trigger`: that copy is from the last render and may be stale.
+                if let i = store.config.triggers.firstIndex(where: { $0.id == trigger.id }) { store.config.triggers[i].enabled = v }
             }))
             .toggleStyle(.switch).controlSize(.mini).labelsHidden()
         }

@@ -8,6 +8,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var termSource: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Two copies of the app (say /Applications and a fresh build) would each keep their own settings in
+        // memory and save over each other, so a change made in one comes back from the other. Hand over to the
+        // copy already running. exit() rather than terminate: willTerminate would clear its HID mappings.
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "")
+            .filter { $0.processIdentifier != getpid() && !$0.isTerminated }
+        if let other = others.first {
+            Log.info("Another ConfigBox is already running (pid \(other.processIdentifier), \(other.bundleURL?.path ?? "?")); exiting")
+            other.activate()
+            exit(0)
+        }
         // SIGTERM (pkill, logout, launchd) should run the same cleanup as Quit: HID remaps and pointer
         // settings are restored in applicationWillTerminate.
         signal(SIGTERM, SIG_IGN)
@@ -43,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             if self.store.config.general.trackpadEnabled { TrackpadEngine.shared.restart() }
             InputRouter.shared.apply(config: self.store.config)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { HIDUtil.reapplyDevices() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { HIDUtil.reapply(reason: "wake") }
         }
 
         // Debug / scripting aid: `ConfigBox --section trackpad|keyboard|remap|switcher|settings`
@@ -93,6 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else if args.contains("--create-area") {
             MainWindowController.shared.show(section: .snapping)
             SnapAreaEditSession.shared.addArea(on: NSScreen.main ?? .underMouse)
+        } else if args.contains("--about") {
+            statusBar.showAbout()
         } else if let i = args.firstIndex(of: "--window"), i + 1 < args.count, let k = MainWindowController.Kind(rawValue: args[i + 1]) {
             MainWindowController.shared.show(k)
         } else if !Permissions.accessibility {

@@ -14,6 +14,13 @@ final class ConfigStore: ObservableObject {
     /// Set while loading a config.json that could not be read, so the sample shown instead does not
     /// overwrite the user's file until they actually edit something.
     private var suppressSave = false
+    /// config.json as this process last read or wrote it. A file that differs was written by someone
+    /// else (a hand edit, a script, another copy of the app): it is reloaded instead of being silently
+    /// overwritten by the older settings held in memory.
+    private var lastSynced: Data?
+    private var dirWatch: DispatchSourceFileSystemObject?
+    private var fileWatch: DispatchSourceFileSystemObject?
+    private var externalCheck: DispatchWorkItem?
 
     private init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -21,6 +28,48 @@ final class ConfigStore: ObservableObject {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         fileURL = dir.appendingPathComponent("config.json")
         config = Config()
+        load()
+        watchDirectory()
+    }
+
+    /// Atomic saves replace the file (the folder's entries change); editors may also write it in place.
+    /// Watch both, re-opening the file watch whenever the folder changes.
+    private func watchDirectory() {
+        dirWatch = watch(fileURL.deletingLastPathComponent(), [.write]) { [weak self] in self?.watchFile() }
+        watchFile()
+    }
+
+    private func watchFile() {
+        fileWatch?.cancel()
+        fileWatch = watch(fileURL, [.write, .extend, .delete, .rename], then: nil)
+    }
+
+    private func watch(_ url: URL, _ mask: DispatchSource.FileSystemEvent, then: (() -> Void)?) -> DispatchSourceFileSystemObject? {
+        let fd = open(url.path, O_EVTONLY)
+        guard fd >= 0 else { return nil }
+        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: mask, queue: .main)
+        src.setEventHandler { [weak self] in
+            guard let self else { return }
+            then?()
+            self.externalCheck?.cancel()
+            let w = DispatchWorkItem { [weak self] in self?.reloadIfChangedOnDisk() }
+            self.externalCheck = w
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: w)
+        }
+        src.setCancelHandler { close(fd) }
+        src.resume()
+        return src
+    }
+
+    private func reloadIfChangedOnDisk() {
+        guard let disk = try? Data(contentsOf: fileURL), let last = lastSynced, disk != last else { return }
+        // An edit made here is about to be saved: saveNow keeps a copy of the outside version first.
+        guard saveWork == nil else { return }
+        // Half-written or mistyped: keep the settings in use rather than falling back to the sample.
+        guard (try? JSONSerialization.jsonObject(with: disk)) != nil else {
+            return Log.error("config.json was changed outside ConfigBox but is not valid JSON; keeping the current settings")
+        }
+        Log.info("config.json was changed outside ConfigBox; reloading it")
         load()
     }
 
@@ -32,6 +81,7 @@ final class ConfigStore: ObservableObject {
         }
         do {
             let data = try Data(contentsOf: fileURL)
+            lastSynced = data
             LossyDecoding.reset()
             var c = try JSONDecoder().decode(Config.self, from: data)
             if !LossyDecoding.skipped.isEmpty {
@@ -100,16 +150,28 @@ final class ConfigStore: ObservableObject {
 
     func saveNow() {
         do {
-            try exportConfig(to: fileURL)
+            let data = try encoded()
+            if let disk = try? Data(contentsOf: fileURL), let last = lastSynced, disk != last, disk != data {
+                let backup = backupURL("external")
+                let kept = (try? disk.write(to: backup)) != nil
+                Log.error("config.json was changed outside ConfigBox and is being replaced by the settings shown in the app"
+                          + (kept ? "; the outside version is kept at \(backup.path)" : ""))
+            }
+            try data.write(to: fileURL, options: .atomic)
+            lastSynced = data
         } catch {
             Log.error("Config save failed: \(error)")
         }
     }
 
     func exportConfig(to url: URL) throws {
+        try encoded().write(to: url, options: .atomic)
+    }
+
+    private func encoded() throws -> Data {
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try enc.encode(config).write(to: url, options: .atomic)
+        return try enc.encode(config)
     }
 
     static let preRestoreFileName = "config.before-restore.json"

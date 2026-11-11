@@ -497,6 +497,8 @@
 "Version" = "バージョン";
 "Vendor / Product ID" = "ベンダー / 製品 ID";
 "Visibility" = "表示";
+"Use F1–F12 on non-Apple keyboards as media keys" = "Apple 以外のキーボードの F1〜F12 をメディアキーとして使う";
+"F1/F2 brightness, F3 Mission Control, F4 Launchpad, F7–F9 playback, F10–F12 volume, like a Mac keyboard. Hold fn (e.g. on the Mac's keyboard) or ⌘⌃⌥⇧ to send the F-key itself. Telling keyboards apart needs Input Monitoring." = "Mac のキーボードと同じく F1/F2 で明るさ、F3 で Mission Control、F4 で Launchpad、F7〜F9 で再生操作、F10〜F12 で音量を操作します。fn（Mac 本体のキーボードなど）または ⌘⌃⌥⇧ を押しながら押すと通常の F キーとして送られます。キーボードの判別には入力監視の許可が必要です。";
 "Volume Down" = "音量を下げる";
 "Volume Up" = "音量を上げる";
 "When pressed" = "押したとき";

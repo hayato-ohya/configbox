@@ -29,6 +29,18 @@ final class ConfigDecodingTests: XCTestCase {
         XCTAssertTrue(LossyDecoding.skipped.isEmpty)
     }
 
+    func testMediaFunctionKeysSettingIsOffByDefaultAndDecodes() throws {
+        XCTAssertFalse(try decode("{}").general.mediaKeysOnOtherKeyboards)
+        XCTAssertTrue(try decode(#"{"general":{"mediaKeysOnOtherKeyboards":true}}"#).general.mediaKeysOnOtherKeyboards)
+    }
+
+    func testOnlyAppleAndBuiltInKeyboardsCountAsApple() {
+        XCTAssertTrue(MediaFunctionKeys.isApple(DeviceRef(vendorId: 0x05AC, productId: 0x0342, name: "Magic Keyboard")))
+        XCTAssertTrue(MediaFunctionKeys.isApple(DeviceRef(vendorId: 0x004C, productId: 0x0267, name: "Magic Keyboard")))
+        XCTAssertTrue(MediaFunctionKeys.isApple(DeviceRef(vendorId: 0, productId: 0, name: "Apple Internal Keyboard / Trackpad")))
+        XCTAssertFalse(MediaFunctionKeys.isApple(DeviceRef(vendorId: 0x046D, productId: 0xB35B, name: "MX Keys")))
+    }
+
     func testEntriesOnlyNeedTheirEssentialKeys() throws {
         let c = try decode("""
         {"triggers":[{"kind":{"shortcut":{"_0":{"keyCode":123}}}}],

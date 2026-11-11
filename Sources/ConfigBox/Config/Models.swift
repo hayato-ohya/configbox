@@ -649,6 +649,7 @@ struct GeneralSettings: Codable {
     var tapMaxMovement: Double = 0.04   // normalized trackpad units the fingers may drift during a tap
     var keepHIDMappingsAtLogin = false  // install a LaunchAgent so hidutil mappings survive without ConfigBox
     var treatJISAsANSI = false          // type characters on JIS keyboards with the ANSI table of the input source
+    var mediaKeysOnOtherKeyboards = false   // F1–F12 on non-Apple keyboards act as media keys; fn + F-key types the F-key
     /// After a swipe gesture fired, swallow trackpad scrolling until the fingers are up (+ this many ms),
     /// so lifting fingers one by one does not scroll the page underneath.
     var suppressScrollAfterGesture = true
@@ -672,6 +673,7 @@ struct GeneralSettings: Codable {
         tapMaxMovement = try c.decodeIfPresent(Double.self, forKey: .tapMaxMovement) ?? tapMaxMovement
         keepHIDMappingsAtLogin = try c.decodeIfPresent(Bool.self, forKey: .keepHIDMappingsAtLogin) ?? keepHIDMappingsAtLogin
         treatJISAsANSI = try c.decodeIfPresent(Bool.self, forKey: .treatJISAsANSI) ?? treatJISAsANSI
+        mediaKeysOnOtherKeyboards = try c.decodeIfPresent(Bool.self, forKey: .mediaKeysOnOtherKeyboards) ?? mediaKeysOnOtherKeyboards
         suppressScrollAfterGesture = try c.decodeIfPresent(Bool.self, forKey: .suppressScrollAfterGesture) ?? suppressScrollAfterGesture
         scrollSuppressTailMs = try c.decodeIfPresent(Int.self, forKey: .scrollSuppressTailMs) ?? scrollSuppressTailMs
         gestureCooldownMs = try c.decodeIfPresent(Int.self, forKey: .gestureCooldownMs) ?? gestureCooldownMs

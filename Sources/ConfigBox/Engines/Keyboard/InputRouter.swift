@@ -9,6 +9,7 @@ final class InputRouter {
     let tap = EventTap()
     let remapper = KeyRemapper()
     let chords = ChordEngine()
+    let mediaFKeys = MediaFunctionKeys()
 
     /// Set while the UI records a shortcut so the recorded keys are not intercepted.
     var recording = false
@@ -35,6 +36,7 @@ final class InputRouter {
         keyboardEnabled = config.general.keyboardEnabled
         treatJISAsANSI = keyboardEnabled && config.general.treatJISAsANSI
         KeySynth.treatJISAsANSI = treatJISAsANSI
+        mediaFKeys.enabled = keyboardEnabled && config.general.mediaKeysOnOtherKeyboards
         shortcutTriggers = config.triggers.filter { $0.enabled && $0.kind.isShortcut }
         swallowedKeys = []   // rules changed: a stray key up is harmless, a missing one is not
         // Keys the tap must keep seeing as themselves: never hand them out as routing keys.
@@ -95,6 +97,7 @@ final class InputRouter {
             break
         }
         let layoutNote = !isChordReplay && rewriteJISToANSI(type, event) ? "JIS → ANSI; " : ""
+        if type == .flagsChanged { mediaFKeys.noteFlagsChanged(event) }
         if recording { return event }
 
         let monitor = EventMonitor.shared
@@ -136,6 +139,14 @@ final class InputRouter {
                 DispatchQueue.main.async { ActionRunner.run(action) }
             }
             return done(nil, remapNote + "consumed: trigger → \(trigger.action.display)")
+        }
+        if type == .keyDown, let action = mediaFKeys.action(for: event) {
+            let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+            if !isRepeat { swallowedKeys.insert(code) }
+            if !isRepeat || action.repeatsWhileHeld {
+                DispatchQueue.main.async { SystemActions.perform(action) }
+            }
+            return done(nil, remapNote + "consumed: F-key as media key → \(action.title)")
         }
         if type == .keyDown { swallowedKeys.remove(code) }   // this press reaches the app, so its release must too
         return done(event, remapNote + "pass")

@@ -144,6 +144,9 @@ struct SettingsView: View {
                 Toggle("Type on JIS keyboards as ANSI (US)", isOn: $store.config.general.treatJISAsANSI)
                     .disabled(!store.config.general.keyboardEnabled)
                     .help("Keys on JIS keyboards produce the characters of a US layout, e.g. Shift+2 types @. Only works while ConfigBox is running.")
+                Toggle("Use F1–F12 on non-Apple keyboards as media keys", isOn: $store.config.general.mediaKeysOnOtherKeyboards)
+                    .disabled(!store.config.general.keyboardEnabled)
+                    .help("F1/F2 brightness, F3 Mission Control, F4 Launchpad, F7–F9 playback, F10–F12 volume, like a Mac keyboard. Hold fn (e.g. on the Mac's keyboard) or ⌘⌃⌥⇧ to send the F-key itself. Telling keyboards apart needs Input Monitoring.")
                 Toggle("Trackpad gestures", isOn: $store.config.general.trackpadEnabled)
                 Toggle("Mouse triggers", isOn: $store.config.general.mouseEnabled)
                 if !TrackpadEngine.shared.isAvailable {

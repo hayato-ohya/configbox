@@ -145,7 +145,8 @@ struct KeyComboEditor: View {
             if combo.isUnset { Text("Choose key…").tag(UInt16.max) }
             ForEach(asSource ? KeyCodes.pickableSources : KeyCodes.pickable) { Text($0.name).tag($0.code) }
         }
-        .labelsHidden().frame(width: 150)
+        .labelsHidden()
+        .fixedSize()   // only as wide as the key name: a fixed width is mostly empty in a grouped form
     }
 
     private func modToggle(_ t: String, _ m: Modifiers) -> some View {

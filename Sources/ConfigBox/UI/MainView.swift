@@ -96,7 +96,7 @@ struct MainView: View {
             Divider()
             content
         }
-        .frame(minWidth: 960, minHeight: 520)
+        .frame(minWidth: 860, minHeight: 520)
     }
 
     private var header: some View {
@@ -151,7 +151,7 @@ extension MainView {
             TriggerListView(state: state)
                 .frame(minWidth: 300, idealWidth: 380, maxHeight: .infinity)
             TriggerEditorContainer(state: state)
-                .frame(minWidth: 450, maxWidth: .infinity, maxHeight: .infinity)   // fits the key editor on one row
+                .frame(minWidth: 340, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

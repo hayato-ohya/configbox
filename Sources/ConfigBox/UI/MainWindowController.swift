@@ -22,7 +22,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
             let w: NSWindow
             switch kind {
             case .main:
-                w = makeWindow(MainView(state: state), title: "ConfigBox", size: NSSize(width: 1100, height: 660), min: NSSize(width: 960, height: 520))
+                w = makeWindow(MainView(state: state), title: "ConfigBox", size: NSSize(width: 1040, height: 660), min: NSSize(width: 860, height: 520))
                 w.styleMask.insert(.fullSizeContentView)
                 w.titlebarAppearsTransparent = true
                 w.titleVisibility = .hidden

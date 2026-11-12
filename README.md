@@ -9,7 +9,7 @@ BetterTouchTool・Karabiner-Elements・AltTab の「普段使う部分」を 1 �
 
 | 元のアプリ | ConfigBox での実装 |
 |---|---|
-| BetterTouchTool | トラックパッドの N 本指タップ / スワイプ、マウス（ボタンクリック・修飾キー + スクロール・ボタン押下ジェスチャ）、キーボードショートカットをトリガーに、ウィンドウ整列・アプリ起動・メディアキー・シェル / AppleScript などを実行 |
+| BetterTouchTool | トラックパッドの N 本指タップ / ダブルタップ / クリック / ダブルクリック / スワイプ、マウス（ボタンクリック・修飾キー + スクロール・ボタン押下ジェスチャ）、キーボードショートカットをトリガーに、ウィンドウ整列・アプリ起動・メディアキー・ドラッグ・シェル / AppleScript などを実行。押し込みを離しても指が触れている間ドラッグを続ける設定もあり |
 | Karabiner-Elements | 単純なキー置換は macOS 標準の `hidutil`（常駐コストゼロ、デバイス別指定可）、Mod-Tap キー（タップで Esc / ホールドで ⌃ など、デバイス別指定可）、同時押し（simultaneous: J + K → 任意のアクション）、キーマクロ（1 キー → 複数キー / テキスト入力 / 機能の連続実行、デバイス別指定可）は CGEventTap で処理 |
 | AltTab | ⌥Tab でウィンドウ単位のスイッチャー。サムネイル表示（ScreenCaptureKit）、最小化 / 非表示ウィンドウも対象、W / M / H / Q でウィンドウ操作 |
 | BTT ウィンドウスナップ | ウィンドウを画面の端・角へドラッグすると半透明プレビューを表示、離すと左右半分 / 4 隅 / 最大化に整列。隣接ディスプレイとの境界は無視、修飾キー押下時のみ有効にも設定可 |
@@ -82,7 +82,7 @@ Sources/ConfigBox/
   App/                           エントリポイント、メニューバー、権限、ウィンドウ管理
   Config/                        設定モデル（Codable JSON）、キーコード表、言語設定、設定の検証
   Engines/Keyboard/              EventTap, InputRouter, KeyRemapper（二役キー）, HIDUtil, KeySynth
-  Engines/Trackpad/              マルチタッチフレーム → タップ / スワイプ認識
+  Engines/Trackpad/              マルチタッチフレーム → タップ / クリック / スワイプ認識、押し込み後のドラッグ継続
   Engines/Switcher/              ウィンドウ列挙、スイッチャー制御、オーバーレイ UI
   Engines/Windows/               ドラッグによるウィンドウスナップとプレビュー
   Engines/Viewer/                Event Viewer 用のイベント記録（ビューア表示中のみ動作）
@@ -128,7 +128,7 @@ Instead of keeping three third-party binaries running, you run a single executab
 
 | Replaces | How ConfigBox does it |
 |---|---|
-| BetterTouchTool | N-finger trackpad taps, clicks and swipes, mouse triggers (button clicks, modifier + scroll, button gestures) and keyboard shortcuts run actions such as window tiling, launching apps, media keys, and shell or AppleScript scripts |
+| BetterTouchTool | N-finger trackpad taps, double taps, clicks, double clicks and swipes, mouse triggers (button clicks, modifier + scroll, button gestures) and keyboard shortcuts run actions such as window tiling, launching apps, media keys, dragging, and shell or AppleScript scripts. An optional setting keeps a drag going after the press is released, while a finger stays on the trackpad |
 | Karabiner-Elements | Simple key remaps use macOS's own `hidutil` (no resident cost, per device if you like). Mod-Tap keys (tap for Esc, hold for ⌃, per device if you like), simultaneous keys (J + K → any action) and key macros (one key → several keys, text or actions, per device if you like) are handled in a CGEventTap |
 | AltTab | A per-window switcher on ⌥Tab, with thumbnails (ScreenCaptureKit), minimized and hidden windows, and W / M / H / Q to act on windows |
 | BTT window snapping | Drag a window to a screen edge or corner to see a translucent preview, then release to tile it to a half, a quarter or full size. Edges shared with another display can be ignored, and snapping can require a modifier |
@@ -200,7 +200,7 @@ Sources/ConfigBox/
   App/                           Entry point, menu bar, permissions, window management
   Config/                        Settings model (Codable JSON), key code table, language setting, validation
   Engines/Keyboard/              EventTap, InputRouter, KeyRemapper (dual-role keys), HIDUtil, KeySynth
-  Engines/Trackpad/              Multitouch frames → tap, click and swipe recognition
+  Engines/Trackpad/              Multitouch frames → tap, click and swipe recognition; keeping a drag after the press
   Engines/Switcher/              Window enumeration, switcher control, overlay UI
   Engines/Windows/               Window snapping by dragging, and its preview
   Engines/Viewer/                Event recording for Event Viewer (only while it is open)

@@ -55,6 +55,9 @@ final class InputRouter {
         ScrollProcessor.shared.settings = config.general.mouseEnabled ? config.mouse : MouseSettings()
         ScrollProcessor.shared.mouseEnabled = config.general.mouseEnabled
         ScrollProcessor.shared.trackpadReverse = config.general.trackpadEnabled && config.general.trackpadReverseScroll
+        DragLock.shared.pointerSpeed = config.general.dragPointerSpeed
+        DragHold.shared.enabled = config.general.trackpadEnabled && config.general.dragHoldEnabled
+        WindowSnapper.shared.tracksAllDrags = DragHold.shared.enabled
         ScrollProcessor.shared.trackpadSpeed = config.general.trackpadEnabled ? config.general.trackpadScrollSpeed : 1.0
         PointerSettings.shared.apply(config.general.mouseEnabled ? config.mouse : MouseSettings())
         SwitcherController.shared.apply(settings: config.switcher)
@@ -81,8 +84,13 @@ final class InputRouter {
         }
         switch type {
         case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
-            if !recording && TrackpadEngine.shared.handleClick(type, event) { return nil }
-            if !recording && MouseEngine.shared.handle(type, event) { return nil }
+            if !recording && TrackpadEngine.shared.handleClick(type, event) { DragHold.shared.cancelPress(); return nil }
+            if !recording && MouseEngine.shared.handle(type, event) { DragHold.shared.cancelPress(); return nil }
+            switch DragHold.shared.handle(type, event) {
+            case .swallow: return nil
+            case .skipSnapper: return event
+            case .pass: break
+            }
             WindowSnapper.shared.handle(type, event)
             return event
         case .scrollWheel:

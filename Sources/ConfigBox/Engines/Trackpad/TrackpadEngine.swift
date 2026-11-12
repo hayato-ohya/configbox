@@ -21,6 +21,11 @@ final class TrackpadEngine {
         var axisRatio: Float = 1.5
         var maxTouchSize: Float = 0
         var configuredFingerCounts: Set<Int> = []
+        var doubleTapFingerCounts: Set<Int> = []
+        var doubleTapInterval: Double = 0.5
+        var frameObservers: [String: (Int, MTPoint) -> Void] = [:]
+        var gesturePausers: Set<String> = []
+        var gesturesPaused: Bool { !gesturePausers.isEmpty }
     }
     private let lock = NSLock()
     private var settings = Settings()
@@ -34,6 +39,25 @@ final class TrackpadEngine {
     var onClick: ((Gesture) -> Bool)?
     /// Finger counts (≥ 2) for which a click trigger exists; other clicks are never looked at.
     var clickFingerCounts: Set<Int> = []
+    /// Finger counts for which a double-click trigger exists (main thread, like `clickFingerCounts`).
+    var doubleClickFingerCounts: Set<Int> = []
+    /// Finger counts with a double-tap trigger: a single tap with that many fingers waits until no second
+    /// tap can follow before it fires.
+    var doubleTapFingerCounts: Set<Int> {
+        get { read(\.doubleTapFingerCounts) } set { write(\.doubleTapFingerCounts, newValue) }
+    }
+    /// Longest gap between the end of the first tap and the start of the second (the system double-click speed).
+    var doubleTapInterval: Double { get { read(\.doubleTapInterval) } set { write(\.doubleTapInterval, newValue) } }
+    /// Registers (or with nil removes) a listener for every frame's finger count and centroid (normalized,
+    /// y up). It runs on the multitouch thread. Used by the drag features while they hold the button.
+    func setFrameObserver(_ key: String, _ observer: ((Int, MTPoint) -> Void)?) {
+        locked { settings.frameObservers[key] = observer }
+    }
+    /// While anyone pauses gestures (a drag is being held), touches only move the pointer: no tap / swipe
+    /// fires for any touch sequence that was under way during that time.
+    func pauseGestures(_ key: String, _ paused: Bool) {
+        locked { if paused { settings.gesturePausers.insert(key) } else { settings.gesturePausers.remove(key) } }
+    }
     var swipeThreshold: Float { get { read(\.swipeThreshold) } set { write(\.swipeThreshold, newValue) } }
     var tapMaxDuration: Double { get { read(\.tapMaxDuration) } set { write(\.tapMaxDuration, newValue) } }
     /// How far the fingers may drift during a tap (normalized units); a quick flick beyond it is no tap.
@@ -43,7 +67,10 @@ final class TrackpadEngine {
     var cooldown: Double { get { read(\.cooldown) } set { write(\.cooldown, newValue) } }
     var axisRatio: Float { get { read(\.axisRatio) } set { write(\.axisRatio, newValue) } }
     var maxTouchSize: Float { get { read(\.maxTouchSize) } set { write(\.maxTouchSize, newValue) } }
-    private var lastEmit: CFAbsoluteTime = 0
+    private var _lastEmit: CFAbsoluteTime = 0             // guarded by `lock`
+    /// A tap that may still become the first half of a double tap (guarded by `lock`).
+    private var _pendingTap: (fingers: Int, end: Double, generation: Int)?
+    private var _tapGeneration = 0
     private(set) var deviceCount = 0
     /// Finger counts (≥ 3) for which at least one gesture trigger exists. Like BetterTouchTool, scrolling is
     /// blocked from the moment that many fingers touch until all fingers are up again, so neither a late
@@ -60,6 +87,7 @@ final class TrackpadEngine {
     private var suppressUntil: CFAbsoluteTime { get { locked { _suppressUntil } } set { locked { _suppressUntil = newValue } } }
     /// Fingers down in the latest frame (read on the main thread).
     private var touching: Int { get { locked { _touching } } set { locked { _touching = newValue } } }
+    var touchingFingers: Int { touching }
     /// A click happened during this touch sequence: no tap / swipe for it.
     private var clickedInSequence: Bool {
         get { locked { _clickedInSequence } } set { locked { _clickedInSequence = newValue } }
@@ -137,6 +165,10 @@ final class TrackpadEngine {
             cy += t.normalized.pos.y
         }
         touching = n
+        if !cfg.frameObservers.isEmpty {
+            let centroid = n > 0 ? MTPoint(x: cx / Float(n), y: cy / Float(n)) : MTPoint(x: 0, y: 0)
+            for observer in cfg.frameObservers.values { observer(n, centroid) }
+        }
         if EventMonitor.shared.trackpadViewerActive {
             EventMonitor.shared.publish(touches: touches.filter { $0.state >= 2 && $0.state <= 5 }.map {
                 TouchPoint(id: Int($0.identifier), x: CGFloat($0.normalized.pos.x), y: CGFloat($0.normalized.pos.y),
@@ -151,7 +183,7 @@ final class TrackpadEngine {
                 // A quick flick that stays below the swipe threshold moved too far to be a tap.
                 if timestamp - startTime < cfg.tapMaxDuration && timestamp - sequenceStart < cfg.tapMaxDuration
                     && maxMove <= cfg.tapMaxMovement {
-                    emit(Gesture(fingers: maxFingers, kind: .tap), cfg)
+                    tapped(fingers: maxFingers, start: sequenceStart, end: timestamp, cfg)
                 }
             }
             if blockingSequence { suppressUntil = CFAbsoluteTimeGetCurrent() + cfg.suppressTail }   // tail covers the lift-off
@@ -161,6 +193,7 @@ final class TrackpadEngine {
             clickedInSequence = false
             return
         }
+        if cfg.gesturesPaused { done = true }
         if cfg.suppressScroll && n >= 3 && cfg.configuredFingerCounts.contains(n) { blockingSequence = true }
         if blockingSequence { suppressUntil = CFAbsoluteTimeGetCurrent() + 0.5 }   // keep blocking while any finger is down
 
@@ -172,7 +205,7 @@ final class TrackpadEngine {
             startCentroid = c
             startTime = timestamp
             maxMove = 0
-            done = false
+            done = cfg.gesturesPaused
             return
         }
         if n < maxFingers {
@@ -195,6 +228,37 @@ final class TrackpadEngine {
         }
     }
 
+    /// A finished tap. With a double-tap trigger for this finger count, a second tap starting within the
+    /// double-click interval makes a double tap; otherwise the single tap fires once that chance has passed
+    /// (interval + max tap duration after the first tap ended, so a second tap in progress can still finish).
+    private func tapped(fingers n: Int, start: Double, end: Double, _ cfg: Settings) {
+        guard cfg.doubleTapFingerCounts.contains(n) else {
+            emit(Gesture(fingers: n, kind: .tap), cfg)
+            return
+        }
+        let generation: Int? = locked {
+            _tapGeneration += 1
+            if let p = _pendingTap, p.fingers == n, start - p.end <= cfg.doubleTapInterval {
+                _pendingTap = nil
+                return nil
+            }
+            _pendingTap = (n, end, _tapGeneration)
+            return _tapGeneration
+        }
+        guard let generation else {
+            emit(Gesture(fingers: n, kind: .doubleTap), cfg)
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + cfg.doubleTapInterval + cfg.tapMaxDuration) { [self] in
+            let single = locked { () -> Bool in
+                guard let p = _pendingTap, p.generation == generation else { return false }
+                _pendingTap = nil
+                return true
+            }
+            if single { emit(Gesture(fingers: n, kind: .tap), cfg) }
+        }
+    }
+
     /// Called from the event tap for every left / right button event: true = swallow it.
     /// A physical click (or a tap-to-click) made while N fingers rest on the trackpad becomes an N-finger click
     /// gesture when a trigger wants it; the matching drags and mouse-up are swallowed too.
@@ -214,8 +278,11 @@ final class TrackpadEngine {
             // A physical click (pressure > 0) ends any tap for this touch sequence, even when no click trigger
             // takes it. Tap-to-click reports zero pressure, so the tap gesture still wins there.
             if e.getDoubleValueField(.mouseEventPressure) > 0 { clickedInSequence = true }
-            guard clickFingerCounts.contains(n), let onClick,
-                  onClick(Gesture(fingers: n, kind: .click)) else { return false }
+            // The system counts the clicks (same timing and distance rules as any double-click). Without a
+            // click trigger the first click of a double click goes through as an ordinary click.
+            let isDouble = e.getIntegerValueField(.mouseEventClickState) == 2 && doubleClickFingerCounts.contains(n)
+            guard isDouble || clickFingerCounts.contains(n), let onClick,
+                  onClick(Gesture(fingers: n, kind: isDouble ? .doubleClick : .click)) else { return false }
             clickedInSequence = true
             swallowUntilUp = up
             return true
@@ -232,6 +299,8 @@ final class TrackpadEngine {
 
     /// Called from the event tap for every scroll event: true = swallow it.
     func shouldSuppressScroll(_ e: CGEvent) -> Bool {
+        // Several fingers moving during a Drag action move the pointer, not the page.
+        if (DragLock.shared.isActive || DragHold.shared.isHolding) && e.getIntegerValueField(.scrollWheelEventIsContinuous) != 0 { return true }
         guard suppressScroll else { return false }
         let now = CFAbsoluteTimeGetCurrent()
         let momentum = e.getIntegerValueField(.scrollWheelEventMomentumPhase)
@@ -250,8 +319,12 @@ final class TrackpadEngine {
     private func emit(_ g: Gesture, _ cfg: Settings) {
         guard let onGesture = cfg.onGesture else { return }
         let now = CFAbsoluteTimeGetCurrent()
-        guard now - lastEmit >= cfg.cooldown else { return }
-        lastEmit = now
+        let ready = locked { () -> Bool in
+            guard now - _lastEmit >= cfg.cooldown else { return false }
+            _lastEmit = now
+            return true
+        }
+        guard ready else { return }
         DispatchQueue.main.async { onGesture(g) }
     }
 }

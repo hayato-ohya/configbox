@@ -8,6 +8,29 @@ final class EventTap {
 
     var handler: Handler?
     private var port: CFMachPort?
+    private let mask: CGEventMask
+
+    static let defaultMask: CGEventMask =
+        (1 << CGEventType.keyDown.rawValue) |
+        (1 << CGEventType.keyUp.rawValue) |
+        (1 << CGEventType.flagsChanged.rawValue) |
+        (1 << CGEventType.leftMouseDown.rawValue) |
+        (1 << CGEventType.leftMouseDragged.rawValue) |
+        (1 << CGEventType.leftMouseUp.rawValue) |
+        (1 << CGEventType.rightMouseDown.rawValue) |
+        (1 << CGEventType.rightMouseDragged.rawValue) |
+        (1 << CGEventType.rightMouseUp.rawValue) |
+        (1 << CGEventType.otherMouseDown.rawValue) |
+        (1 << CGEventType.otherMouseDragged.rawValue) |
+        (1 << CGEventType.otherMouseUp.rawValue) |
+        (1 << CGEventType.scrollWheel.rawValue)
+
+    let location: CGEventTapLocation
+
+    init(mask: CGEventMask = EventTap.defaultMask, location: CGEventTapLocation = .cgSessionEventTap) {
+        self.mask = mask
+        self.location = location
+    }
     private var source: CFRunLoopSource?
 
     var isRunning: Bool { port != nil }
@@ -15,21 +38,6 @@ final class EventTap {
     @discardableResult
     func start() -> Bool {
         guard port == nil else { return true }
-        let mask: CGEventMask =
-            (1 << CGEventType.keyDown.rawValue) |
-            (1 << CGEventType.keyUp.rawValue) |
-            (1 << CGEventType.flagsChanged.rawValue) |
-            (1 << CGEventType.leftMouseDown.rawValue) |
-            (1 << CGEventType.leftMouseDragged.rawValue) |
-            (1 << CGEventType.leftMouseUp.rawValue) |
-            (1 << CGEventType.rightMouseDown.rawValue) |
-            (1 << CGEventType.rightMouseDragged.rawValue) |
-            (1 << CGEventType.rightMouseUp.rawValue) |
-            (1 << CGEventType.otherMouseDown.rawValue) |
-            (1 << CGEventType.otherMouseDragged.rawValue) |
-            (1 << CGEventType.otherMouseUp.rawValue) |
-            (1 << CGEventType.scrollWheel.rawValue)
-
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }
             let tap = Unmanaged<EventTap>.fromOpaque(refcon).takeUnretainedValue()
@@ -42,7 +50,7 @@ final class EventTap {
             return nil
         }
 
-        guard let port = CGEvent.tapCreate(tap: .cgSessionEventTap,
+        guard let port = CGEvent.tapCreate(tap: location,
                                            place: .headInsertEventTap,
                                            options: .defaultTap,
                                            eventsOfInterest: mask,
@@ -55,7 +63,7 @@ final class EventTap {
         source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, port, 0)
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: port, enable: true)
-        Log.info("Event tap started")
+        if mask == EventTap.defaultMask { Log.info("Event tap started") }
         return true
     }
 

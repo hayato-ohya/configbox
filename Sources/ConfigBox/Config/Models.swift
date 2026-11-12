@@ -74,12 +74,14 @@ struct KeyCombo: Codable, Hashable {
 }
 
 enum GestureKind: String, Codable, CaseIterable, Identifiable {
-    case tap, click, swipeUp, swipeDown, swipeLeft, swipeRight
+    case tap, doubleTap, click, doubleClick, swipeUp, swipeDown, swipeLeft, swipeRight
     var id: String { rawValue }
     var title: String {
         switch self {
         case .tap: L("Tap")
+        case .doubleTap: L("Double Tap")
         case .click: L("Click")
+        case .doubleClick: L("Double Click")
         case .swipeUp: L("Swipe Up")
         case .swipeDown: L("Swipe Down")
         case .swipeLeft: L("Swipe Left")
@@ -89,13 +91,17 @@ enum GestureKind: String, Codable, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .tap: "hand.tap"
+        case .doubleTap: "hand.tap.fill"
         case .click: "cursorarrow.click"
+        case .doubleClick: "cursorarrow.click.2"
         case .swipeUp: "arrow.up"
         case .swipeDown: "arrow.down"
         case .swipeLeft: "arrow.left"
         case .swipeRight: "arrow.right"
         }
     }
+    /// Recognized from finger touches without any movement (taps and clicks, single or double).
+    var isStationary: Bool { [.tap, .doubleTap, .click, .doubleClick].contains(self) }
 }
 
 struct Gesture: Codable, Hashable {
@@ -222,7 +228,7 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
     case volumeUp, volumeDown, mute
     case brightnessUp, brightnessDown
     case playPause, nextTrack, previousTrack
-    case middleClick, mouseBack, mouseForward
+    case middleClick, drag, mouseBack, mouseForward
     case hideFrontApp, quitFrontApp, closeWindow, minimizeWindow, zoomWindow
     case toggleDarkMode
 
@@ -246,6 +252,7 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .nextTrack: L("Next Track")
         case .previousTrack: L("Previous Track")
         case .middleClick: L("Middle Click")
+        case .drag: L("Drag")
         case .mouseBack: L("Mouse Back (Button 4)")
         case .mouseForward: L("Mouse Forward (Button 5)")
         case .hideFrontApp: L("Hide Frontmost App")
@@ -660,6 +667,9 @@ struct GeneralSettings: Codable {
     var maxTouchSize: Double = 0            // ignore touches larger than this (0 = off); palms are typically > 3
     var trackpadReverseScroll = false       // reverse trackpad scrolling independently of the mouse
     var trackpadScrollSpeed: Double = 1.0   // multiplier for trackpad scrolling
+    var dragPointerSpeed: Double = 1.0      // pointer speed of the Drag action when two or more fingers move
+    /// A drag started by pressing the trackpad goes on after the press is released, until the finger lifts.
+    var dragHoldEnabled = false
 
     init() {}
     init(from decoder: Decoder) throws {
@@ -681,6 +691,8 @@ struct GeneralSettings: Codable {
         maxTouchSize = try c.decodeIfPresent(Double.self, forKey: .maxTouchSize) ?? maxTouchSize
         trackpadReverseScroll = try c.decodeIfPresent(Bool.self, forKey: .trackpadReverseScroll) ?? trackpadReverseScroll
         trackpadScrollSpeed = try c.decodeIfPresent(Double.self, forKey: .trackpadScrollSpeed) ?? trackpadScrollSpeed
+        dragPointerSpeed = try c.decodeIfPresent(Double.self, forKey: .dragPointerSpeed) ?? dragPointerSpeed
+        dragHoldEnabled = try c.decodeIfPresent(Bool.self, forKey: .dragHoldEnabled) ?? dragHoldEnabled
     }
 }
 

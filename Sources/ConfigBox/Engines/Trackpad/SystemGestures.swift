@@ -24,7 +24,7 @@ enum SystemGestures {
         let threeTap = int("TrackpadThreeFingerTapGesture") ?? 0
         let threeDrag = int("TrackpadThreeFingerDrag") ?? 0
         switch (g.fingers, g.kind) {
-        case (3, .tap): return threeTap != 0 ? L("Look up / data detectors (three-finger tap)") : nil
+        case (3, .tap), (3, .doubleTap): return threeTap != 0 ? L("Look up / data detectors (three-finger tap)") : nil
         case (3, .swipeLeft), (3, .swipeRight):
             if threeDrag != 0 { return L("Three-finger drag") }
             return three.0 == 0 ? nil : (three.0 == 1 ? L("Swipe between pages") : L("Swipe between full-screen apps / Spaces"))

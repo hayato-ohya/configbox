@@ -94,8 +94,29 @@ final class WindowSnapper {
 
     private init() {}
 
+    /// Set while "keep dragging after the press is released" is on: window drags are then followed even
+    /// when nothing can snap, so that feature knows which window to keep moving.
+    var tracksAllDrags = false
+
+    /// The window being dragged right now. A drag still undecided is settled from where its window is.
+    func currentDraggedWindow() -> AXUIElement? {
+        switch state {
+        case .dragging(let w):
+            return w
+        case .pending(let w, let base, _, _):
+            guard let f = AX.frame(of: w), abs(f.width - base.width) <= 1, abs(f.height - base.height) <= 1,
+                  abs(f.minX - base.minX) > 1 || abs(f.minY - base.minY) > 1 else { return nil }
+            state = .dragging(window: w)
+            draggedApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+            showOverlays()
+            return w
+        default:
+            return nil
+        }
+    }
+
     func handle(_ type: CGEventType, _ event: CGEvent) {
-        guard settings.enabled || !areas.isEmpty else { return }
+        guard settings.enabled || !areas.isEmpty || tracksAllDrags else { return }
         switch type {
         case .leftMouseDown:
             dragStart = event.location

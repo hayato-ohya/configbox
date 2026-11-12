@@ -451,6 +451,16 @@
 "System: %@. Both will fire; turn the system gesture off or use another finger count." = "システム: %@。両方が実行されます。システムのジェスチャをオフにするか、別の指の本数を使ってください。";
 "Tap" = "タップ";
 "Click" = "クリック";
+"Double Tap" = "ダブルタップ";
+"Double Click" = "ダブルクリック";
+"Drag" = "ドラッグ";
+"Drag action pointer speed" = "ドラッグアクションのポインタ速度";
+"Dragging" = "ドラッグ";
+"Keep dragging after releasing the press" = "押し込みを離してもドラッグを続ける";
+"Press the trackpad and start moving, then relax: the drag goes on while a finger stays on the trackpad and drops when it lifts. Works for text, files and other in-app drags, and for windows (including window snapping). A click that did not move while pressed stays a click. The pointer speed applies to the Drag action when two or more fingers move." = "トラックパッドを押し込んで動かし始めたら、力を抜いてかまいません。指が触れている間はドラッグが続き、指を離すとドロップします。文字やファイルなどアプリ内のドラッグと、ウィンドウの移動（ウィンドウスナップを含む）で使えます。押し込んだまま動かさなかったクリックは、そのまま普通のクリックです。ポインタ速度は、ドラッグアクションを2本以上の指で動かすときに使われます。";
+"A single tap with the same number of fingers now waits until no second tap can follow (the system double-click speed) before it runs." = "同じ本数の指のシングルタップは、2回目のタップが来ないと分かるまで（システムのダブルクリックの間隔）待ってから実行されます。";
+"Without a click trigger for the same number of fingers, the first click goes through as a normal click." = "同じ本数の指のクリックトリガーがない場合、1回目のクリックは通常のクリックとして処理されます。";
+"Works like clicking the trackpad and moving without letting go. If fingers are still down when it runs (e.g. a swipe trigger), moving them drags and lifting them lets go; if not (e.g. a tap trigger), the next touch drags and lifting it lets go. With two or more fingers, ConfigBox moves the pointer itself. Clicking or running it again also lets go." = "トラックパッドをクリックしたまま指を動かすのと同じ動きをします。実行時に指が触れたままなら（スワイプのトリガーなど）その指を動かすとドラッグになり、指を離すと終わります。触れていなければ（タップのトリガーなど）次に触れた指でドラッグし、離すと終わります。2本以上の指で動かすときは ConfigBox がポインタを動かします。クリックするか、もう一度実行しても終わります。";
 "Tap for a key or an action sequence, hold for modifiers (QMK Mod-Tap / Karabiner to_if_alone)." = "タップでキーまたはアクションを実行し、押し続けると修飾キーとして働きます（QMK の Mod-Tap / Karabiner の to_if_alone）。";
 "Tap: %@" = "タップ: %@";
 "Tapping term" = "タップ判定時間";

@@ -52,8 +52,15 @@ struct GestureEditor: View {
         Picker("Gesture", selection: $gesture.kind) {
             ForEach(GestureKind.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
         }
-        if gesture.fingers == 2 || (gesture.kind != .tap && gesture.kind != .click && gesture.fingers >= 3) {
+        if gesture.fingers == 2 || (!gesture.kind.isStationary && gesture.fingers >= 3) {
             Text("macOS handles this gesture itself too. Disable the overlapping system gesture in System Settings › Trackpad to avoid double actions.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        if gesture.kind == .doubleTap {
+            Text("A single tap with the same number of fingers now waits until no second tap can follow (the system double-click speed) before it runs.")
+                .font(.caption).foregroundStyle(.secondary)
+        } else if gesture.kind == .doubleClick {
+            Text("Without a click trigger for the same number of fingers, the first click goes through as a normal click.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -148,6 +155,10 @@ struct ActionEditor: View {
         case .system(let s):
             Picker("System", selection: Binding(get: { s }, set: { action = .system($0) })) {
                 ForEach(SystemAction.allCases) { Text($0.title).tag($0) }
+            }
+            if s == .drag {
+                Text("Works like clicking the trackpad and moving without letting go. If fingers are still down when it runs (e.g. a swipe trigger), moving them drags and lifting them lets go; if not (e.g. a tap trigger), the next touch drags and lifting it lets go. With two or more fingers, ConfigBox moves the pointer itself. Clicking or running it again also lets go.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
     }

@@ -65,6 +65,18 @@ struct TrackpadSettingsView: View {
             }
 
             Section {
+                Toggle("Keep dragging after releasing the press", isOn: $store.config.general.dragHoldEnabled)
+                LabeledContent("Drag action pointer speed") {
+                    HStack {
+                        Slider(value: $store.config.general.dragPointerSpeed, in: 0.25...3, step: 0.25)
+                        Text(String(format: "%.2f×", store.config.general.dragPointerSpeed)).monospacedDigit().frame(width: 52, alignment: .trailing)
+                    }
+                }
+            } header: { Text("Dragging") } footer: {
+                Text("Press the trackpad and start moving, then relax: the drag goes on while a finger stays on the trackpad and drops when it lifts. Works for text, files and other in-app drags, and for windows (including window snapping). A click that did not move while pressed stays a click. The pointer speed applies to the Drag action when two or more fingers move.").formFooter()
+            }
+
+            Section {
                 LabeledContent("Multitouch devices", value: TrackpadEngine.shared.isAvailable ? L("%lld detected · engine %@", deviceCount, running ? L("running") : L("idle")) : L("framework unavailable"))
                 HStack {
                     Button("Restart Engine") { TrackpadEngine.shared.restart(); refresh() }

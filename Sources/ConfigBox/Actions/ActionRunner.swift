@@ -101,6 +101,7 @@ enum SystemActions {
         case .nextTrack: KeySynth.mediaKey(.next)
         case .previousTrack: KeySynth.mediaKey(.previous)
         case .middleClick: KeySynth.middleClick()
+        case .drag: DragLock.shared.toggle()
         case .mouseBack: navigate(forward: false)
         case .mouseForward: navigate(forward: true)
         case .hideFrontApp: NSWorkspace.shared.frontmostApplication?.hide()

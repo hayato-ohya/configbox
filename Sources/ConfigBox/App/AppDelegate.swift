@@ -44,6 +44,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.apply(self.store.config)
         }
+        // Test aid: `--debug-hooks` lets a script run the Drag action and fake resting fingers.
+        if CommandLine.arguments.contains("--debug-hooks") {
+            let center = DistributedNotificationCenter.default()
+            center.addObserver(forName: Notification.Name("ConfigBoxDebugDrag"), object: nil, queue: .main) { _ in
+                DragLock.shared.toggle()
+            }
+            center.addObserver(forName: Notification.Name("ConfigBoxDebugFingers"), object: nil, queue: .main) { note in
+                DragHold.shared.debugFingers(Int(note.object as? String ?? ""))
+            }
+        }
         logDisplays()
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             self?.logDisplays()
@@ -157,11 +167,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard t.enabled, cfg.general.trackpadEnabled, case .gesture(let g) = t.kind, g.fingers >= 3 else { return nil }
             return g.fingers
         })
-        tp.clickFingerCounts = Set(cfg.triggers.compactMap { t -> Int? in
-            guard t.enabled, cfg.general.trackpadEnabled, case .gesture(let g) = t.kind, g.kind == .click else { return nil }
-            return g.fingers
-        })
-        let wantsTrackpad = (cfg.general.trackpadEnabled && cfg.triggers.contains { $0.enabled && $0.kind.isGesture })
+        func fingerCounts(_ kind: GestureKind) -> Set<Int> {
+            Set(cfg.triggers.compactMap { t -> Int? in
+                guard t.enabled, cfg.general.trackpadEnabled, case .gesture(let g) = t.kind, g.kind == kind else { return nil }
+                return g.fingers
+            })
+        }
+        tp.clickFingerCounts = fingerCounts(.click)
+        tp.doubleClickFingerCounts = fingerCounts(.doubleClick)
+        tp.doubleTapFingerCounts = fingerCounts(.doubleTap)
+        tp.doubleTapInterval = NSEvent.doubleClickInterval
+        let wantsTrackpad = (cfg.general.trackpadEnabled && (cfg.general.dragHoldEnabled || cfg.triggers.contains { $0.enabled && $0.kind.isGesture }))
             || EventMonitor.shared.trackpadViewerActive
         if wantsTrackpad && !tp.isRunning { tp.start() }
         if !wantsTrackpad && tp.isRunning { tp.stop() }

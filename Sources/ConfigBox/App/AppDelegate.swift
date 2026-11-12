@@ -37,8 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         apply(store.config)
 
         InputRouter.shared.start()
-        TrackpadEngine.shared.onGesture = { [weak self] g in self?.handle(gesture: g) }
-        TrackpadEngine.shared.onClick = { [weak self] g in self?.handleClick(gesture: g) ?? false }
+        TrackpadEngine.shared.onGesture = { [weak self] input in self?.handle(input) }
+        TrackpadEngine.shared.onClick = { [weak self] input in self?.handleClick(input) ?? false }
 
         NotificationCenter.default.addObserver(forName: .configBoxReconcile, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
@@ -163,19 +163,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tp.maxTouchSize = Float(cfg.general.maxTouchSize)
         tp.suppressScroll = cfg.general.suppressScrollAfterGesture
         tp.suppressTail = Double(cfg.general.scrollSuppressTailMs) / 1000
-        tp.configuredFingerCounts = Set(cfg.triggers.compactMap { t -> Int? in
-            guard t.enabled, cfg.general.trackpadEnabled, case .gesture(let g) = t.kind, g.fingers >= 3 else { return nil }
-            return g.fingers
-        })
-        func fingerCounts(_ kind: GestureKind) -> Set<Int> {
-            Set(cfg.triggers.compactMap { t -> Int? in
-                guard t.enabled, cfg.general.trackpadEnabled, case .gesture(let g) = t.kind, g.kind == kind else { return nil }
-                return g.fingers
-            })
-        }
-        tp.clickFingerCounts = fingerCounts(.click)
-        tp.doubleClickFingerCounts = fingerCounts(.doubleClick)
-        tp.doubleTapFingerCounts = fingerCounts(.doubleTap)
+        let gestures: [Gesture] = cfg.general.trackpadEnabled ? cfg.triggers.compactMap { t in
+            guard t.enabled, case .gesture(let g) = t.kind else { return nil }
+            return g
+        } : []
+        tp.gestures = gestures
+        tp.regionSize = cfg.general.touchRegionSize
+        tp.configuredFingerCounts = Set(gestures.map(\.totalFingers).filter { $0 >= 3 })
+        tp.clickFingerCounts = Set(gestures.filter { $0.kind == .click }.map(\.totalFingers))
+        tp.doubleClickFingerCounts = Set(gestures.filter { $0.kind == .doubleClick }.map(\.totalFingers))
         tp.doubleTapInterval = NSEvent.doubleClickInterval
         let wantsTrackpad = (cfg.general.trackpadEnabled && (cfg.general.dragHoldEnabled || cfg.triggers.contains { $0.enabled && $0.kind.isGesture }))
             || EventMonitor.shared.trackpadViewerActive
@@ -183,33 +179,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !wantsTrackpad && tp.isRunning { tp.stop() }
     }
 
-    private func handle(gesture: Gesture) {
-        guard store.config.general.trackpadEnabled else { EventMonitor.shared.record(gesture: gesture, handled: false); return }
-        let match = trigger(for: gesture)
-        EventMonitor.shared.record(gesture: gesture, handled: match != nil)
-        if let match { ActionRunner.run(match.action) }
+    private func handle(_ input: GestureInput) {
+        guard store.config.general.trackpadEnabled else { EventMonitor.shared.record(gesture: input.gesture, handled: false); return }
+        let match = trigger(for: input)
+        EventMonitor.shared.record(gesture: match?.gesture ?? input.gesture, handled: match != nil)
+        if let match { ActionRunner.run(match.trigger.action) }
     }
 
     /// Runs on the event tap: only a click some trigger (for the frontmost app) wants is taken from the system.
-    private func handleClick(gesture: Gesture) -> Bool {
-        guard store.config.general.trackpadEnabled, let match = trigger(for: gesture) else { return false }
-        EventMonitor.shared.record(gesture: gesture, handled: true)
-        let action = match.action
+    private func handleClick(_ input: GestureInput) -> Bool {
+        guard store.config.general.trackpadEnabled, let match = trigger(for: input) else { return false }
+        EventMonitor.shared.record(gesture: match.gesture, handled: true)
+        let action = match.trigger.action
         DispatchQueue.main.async { ActionRunner.run(action) }
         return true
     }
 
-    private func trigger(for gesture: Gesture) -> Trigger? {
+    /// The trigger for what the trackpad saw: the most specific region / resting finger wins; between equally
+    /// specific ones, a trigger for the frontmost app beats a global one, then the first in the list.
+    private func trigger(for input: GestureInput) -> (trigger: Trigger, gesture: Gesture)? {
         let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        var match: Trigger?
+        let size = store.config.general.touchRegionSize
+        var best: (trigger: Trigger, gesture: Gesture, rank: Int)?
         for t in store.config.triggers where t.enabled {
-            guard case .gesture(let g) = t.kind, g == gesture else { continue }
-            if let app = t.appBundleId {
-                if app == front { return t }
-            } else if match == nil {
-                match = t
-            }
+            guard case .gesture(let g) = t.kind, let score = GestureMatcher.score(g, input, size: size) else { continue }
+            if let app = t.appBundleId, app != front { continue }
+            let rank = score * 2 + (t.appBundleId == nil ? 0 : 1)
+            if best == nil || rank > best!.rank { best = (t, g, rank) }
         }
-        return match
+        return best.map { ($0.trigger, $0.gesture) }
     }
 }

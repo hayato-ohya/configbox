@@ -45,14 +45,28 @@ struct TriggerEditor: View {
 
 struct GestureEditor: View {
     @Binding var gesture: Gesture
+    @EnvironmentObject var store: ConfigStore
+
     var body: some View {
         Picker("Fingers", selection: $gesture.fingers) {
-            ForEach(2..<6, id: \.self) { Text("\($0) Fingers").tag($0) }
+            ForEach(1..<6, id: \.self) { Text("\($0) Fingers").tag($0) }
         }
-        Picker("Gesture", selection: $gesture.kind) {
+        Picker("Gesture", selection: Binding(get: { gesture.kind }, set: { kind in
+            gesture.kind = kind
+            if !kind.allowsAnchor { gesture.anchor = nil }   // only taps and clicks can have a resting finger
+        })) {
             ForEach(GestureKind.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
         }
-        if gesture.fingers == 2 || (!gesture.kind.isStationary && gesture.fingers >= 3) {
+        RegionPicker(title: gesture.kind.isStationary ? "Where" : "Starting at", none: "Anywhere", region: $gesture.region)
+        if gesture.kind.allowsAnchor {
+            RegionPicker(title: "While a finger rests on", none: "No resting finger", region: $gesture.anchor)
+        }
+        if gesture.region != nil || gesture.anchor != nil {
+            LabeledContent("") {
+                TrackpadRegionPreview(region: gesture.region, anchor: gesture.anchor, size: store.config.general.touchRegionSize)
+            }
+        }
+        if SystemGestures.systemFeature(for: gesture) != nil || (!gesture.kind.isStationary && gesture.totalFingers >= 3) {
             Text("macOS handles this gesture itself too. Disable the overlapping system gesture in System Settings › Trackpad to avoid double actions.")
                 .font(.caption).foregroundStyle(.secondary)
         }
@@ -63,6 +77,73 @@ struct GestureEditor: View {
             Text("Without a click trigger for the same number of fingers, the first click goes through as a normal click.")
                 .font(.caption).foregroundStyle(.secondary)
         }
+        if gesture.anchor != nil {
+            Text("Put the resting finger down first and keep it still; the other fingers tap or click a moment later. Fingers that land together count as an ordinary multi-finger gesture.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// A trackpad region, or none.
+struct RegionPicker: View {
+    let title: LocalizedStringKey
+    let none: LocalizedStringKey
+    @Binding var region: TouchRegion?
+
+    var body: some View {
+        Picker(title, selection: $region) {
+            Text(none).tag(TouchRegion?.none)
+            Divider()
+            ForEach(TouchRegion.corners) { Text($0.title).tag(TouchRegion?.some($0)) }
+            Divider()
+            ForEach(TouchRegion.edges) { Text($0.title).tag(TouchRegion?.some($0)) }
+            Divider()
+            ForEach(TouchRegion.halves) { Text($0.title).tag(TouchRegion?.some($0)) }
+            Divider()
+            Text(TouchRegion.center.title).tag(TouchRegion?.some(.center))
+        }
+    }
+}
+
+/// The trackpad seen from above with the gesture's region (accent) and the resting finger's region (hatched).
+struct TrackpadRegionPreview: View {
+    var region: TouchRegion?
+    var anchor: TouchRegion?
+    var size: Double
+    var width: CGFloat = 160
+
+    var body: some View {
+        let height = width / TouchRegion.aspect
+        Canvas { ctx, canvas in
+            func box(_ r: CGRect) -> CGRect {
+                // Trackpad coordinates have their origin at the bottom left.
+                CGRect(x: r.minX * canvas.width, y: (1 - r.maxY) * canvas.height, width: r.width * canvas.width, height: r.height * canvas.height)
+            }
+            let pad = Path(roundedRect: CGRect(origin: .zero, size: canvas).insetBy(dx: 0.5, dy: 0.5), cornerRadius: 8)
+            ctx.fill(pad, with: .color(.secondary.opacity(0.12)))
+            ctx.clip(to: pad)
+            if let anchor {
+                let r = box(anchor.rect(size: size))
+                ctx.fill(Path(r), with: .color(.secondary.opacity(0.35)))
+                var stripes = Path()
+                var x = r.minX - r.height
+                while x < r.maxX {
+                    stripes.move(to: CGPoint(x: x, y: r.maxY)); stripes.addLine(to: CGPoint(x: x + r.height, y: r.minY))
+                    x += 6
+                }
+                var c = ctx
+                c.clip(to: Path(r))
+                c.stroke(stripes, with: .color(.secondary.opacity(0.6)), lineWidth: 1)
+            }
+            if let region {
+                let r = box(region.rect(size: size))
+                ctx.fill(Path(r), with: .color(.accentColor.opacity(0.45)))
+                ctx.stroke(Path(r), with: .color(.accentColor), lineWidth: 1.5)
+            }
+            ctx.stroke(pad, with: .color(.secondary.opacity(0.5)), lineWidth: 1)
+        }
+        .frame(width: width, height: height)
+        .accessibilityLabel(Text([region?.title, anchor.map { L("holding %@", $0.title) }].compactMap { $0 }.joined(separator: ", ")))
     }
 }
 

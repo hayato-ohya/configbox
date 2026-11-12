@@ -18,12 +18,15 @@ enum SystemGestures {
 
     /// System features claimed for a given finger count / direction (nil = none).
     static func systemFeature(for g: Gesture) -> String? {
+        // A tap or click next to a resting finger is taken from macOS whenever it matches (a two-finger click
+        // that becomes a secondary click included), so nothing runs twice.
+        if g.anchor != nil && g.kind.isStationary { return nil }
         // Trackpad*Swipe values: 0 off, 1 swipe between pages (3h), 2 Mission Control / Spaces / App Exposé
         let three = (int("TrackpadThreeFingerHorizSwipeGesture") ?? 0, int("TrackpadThreeFingerVertSwipeGesture") ?? 0)
         let four = (int("TrackpadFourFingerHorizSwipeGesture") ?? 2, int("TrackpadFourFingerVertSwipeGesture") ?? 2)
         let threeTap = int("TrackpadThreeFingerTapGesture") ?? 0
         let threeDrag = int("TrackpadThreeFingerDrag") ?? 0
-        switch (g.fingers, g.kind) {
+        switch (g.totalFingers, g.kind) {
         case (3, .tap), (3, .doubleTap): return threeTap != 0 ? L("Look up / data detectors (three-finger tap)") : nil
         case (3, .swipeLeft), (3, .swipeRight):
             if threeDrag != 0 { return L("Three-finger drag") }

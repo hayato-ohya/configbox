@@ -34,6 +34,13 @@ struct TrackpadSettingsView: View {
                         Text(String(format: "%.3f", store.config.general.tapMaxMovement)).monospacedDigit().frame(width: 44, alignment: .trailing)
                     }
                 }
+                LabeledContent("Corner and edge size") {
+                    HStack {
+                        Slider(value: $store.config.general.touchRegionSize, in: 0.05...0.35, step: 0.01)
+                        Text(String(format: "%.0f%%", store.config.general.touchRegionSize * 100)).monospacedDigit().frame(width: 44, alignment: .trailing)
+                        TrackpadRegionPreview(region: .topRight, anchor: .leftEdge, size: store.config.general.touchRegionSize, width: 40)
+                    }
+                }
                 Stepper(value: $store.config.general.gestureCooldownMs, in: 0...1000, step: 50) {
                     LabeledContent("Cooldown between gestures", value: "\(store.config.general.gestureCooldownMs) ms")
                 }

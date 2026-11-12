@@ -9,7 +9,7 @@ BetterTouchTool・Karabiner-Elements・AltTab の「普段使う部分」を 1 �
 
 | 元のアプリ | ConfigBox での実装 |
 |---|---|
-| BetterTouchTool | トラックパッドの N 本指タップ / ダブルタップ / クリック / ダブルクリック / スワイプ、マウス（ボタンクリック・修飾キー + スクロール・ボタン押下ジェスチャ）、キーボードショートカットをトリガーに、ウィンドウ整列・アプリ起動・メディアキー・ドラッグ・シェル / AppleScript などを実行。押し込みを離しても指が触れている間ドラッグを続ける設定もあり |
+| BetterTouchTool | トラックパッドの N 本指タップ / ダブルタップ / クリック / ダブルクリック / スワイプ（四隅・端・半分などの位置や、別の指を押さえながらの条件も指定可）、マウス（ボタンクリック・修飾キー + スクロール・ボタン押下ジェスチャ）、キーボードショートカットをトリガーに、ウィンドウ整列・アプリ起動・メディアキー・ドラッグ・シェル / AppleScript などを実行。押し込みを離しても指が触れている間ドラッグを続ける設定もあり |
 | Karabiner-Elements | 単純なキー置換は macOS 標準の `hidutil`（常駐コストゼロ、デバイス別指定可）、Mod-Tap キー（タップで Esc / ホールドで ⌃ など、デバイス別指定可）、同時押し（simultaneous: J + K → 任意のアクション）、キーマクロ（1 キー → 複数キー / テキスト入力 / 機能の連続実行、デバイス別指定可）は CGEventTap で処理 |
 | AltTab | ⌥Tab でウィンドウ単位のスイッチャー。サムネイル表示（ScreenCaptureKit）、最小化 / 非表示ウィンドウも対象、W / M / H / Q でウィンドウ操作 |
 | BTT ウィンドウスナップ | ウィンドウを画面の端・角へドラッグすると半透明プレビューを表示、離すと左右半分 / 4 隅 / 最大化に整列。隣接ディスプレイとの境界は無視、修飾キー押下時のみ有効にも設定可 |
@@ -128,7 +128,7 @@ Instead of keeping three third-party binaries running, you run a single executab
 
 | Replaces | How ConfigBox does it |
 |---|---|
-| BetterTouchTool | N-finger trackpad taps, double taps, clicks, double clicks and swipes, mouse triggers (button clicks, modifier + scroll, button gestures) and keyboard shortcuts run actions such as window tiling, launching apps, media keys, dragging, and shell or AppleScript scripts. An optional setting keeps a drag going after the press is released, while a finger stays on the trackpad |
+| BetterTouchTool | N-finger trackpad taps, double taps, clicks, double clicks and swipes (optionally limited to a corner, edge or half of the pad, or done while another finger rests elsewhere), mouse triggers (button clicks, modifier + scroll, button gestures) and keyboard shortcuts run actions such as window tiling, launching apps, media keys, dragging, and shell or AppleScript scripts. An optional setting keeps a drag going after the press is released, while a finger stays on the trackpad |
 | Karabiner-Elements | Simple key remaps use macOS's own `hidutil` (no resident cost, per device if you like). Mod-Tap keys (tap for Esc, hold for ⌃, per device if you like), simultaneous keys (J + K → any action) and key macros (one key → several keys, text or actions, per device if you like) are handled in a CGEventTap |
 | AltTab | A per-window switcher on ⌥Tab, with thumbnails (ScreenCaptureKit), minimized and hidden windows, and W / M / H / Q to act on windows |
 | BTT window snapping | Drag a window to a screen edge or corner to see a translucent preview, then release to tile it to a half, a quarter or full size. Edges shared with another display can be ignored, and snapping can require a modifier |

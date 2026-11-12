@@ -34,6 +34,16 @@ enum ConfigValidation {
                 out.append(L("The Key → Actions rule “%@” uses the same key and runs instead of this trigger.", label(m.name, fallback: m.from.display)))
             }
         }
+        if case .gesture(let g) = t.kind, g.fingers == 1 {
+            if !g.kind.isStationary {
+                out.append(L("One-finger swipes move the pointer, so this trigger never runs. Use two or more fingers."))
+            } else if g.region == nil && g.anchor == nil {
+                out.append(L("A one-finger gesture needs a region or a resting finger; anywhere on the trackpad it would be every ordinary tap or click, so this trigger never runs."))
+            }
+        }
+        if case .gesture(let g) = t.kind, let r = g.region, r == g.anchor {
+            out.append(L("The resting finger and the other fingers use the same region. This works, but both must fit into it."))
+        }
         if c.triggers.contains(where: { $0.id != t.id && $0.enabled && $0.kind == t.kind && $0.appBundleId == t.appBundleId }) {
             out.append(L("Another trigger in this list uses the same input. Only the first of them runs."))
         }

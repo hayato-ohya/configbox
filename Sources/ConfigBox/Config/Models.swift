@@ -102,12 +102,35 @@ enum GestureKind: String, Codable, CaseIterable, Identifiable {
     }
     /// Recognized from finger touches without any movement (taps and clicks, single or double).
     var isStationary: Bool { [.tap, .doubleTap, .click, .doubleClick].contains(self) }
+    /// Can be combined with a finger resting elsewhere on the trackpad.
+    var allowsAnchor: Bool { self == .tap || self == .click }
 }
 
 struct Gesture: Codable, Hashable {
     var fingers: Int
     var kind: GestureKind
-    var display: String { L("%lld Finger %@", fingers, kind.title) }
+    /// Where on the trackpad the fingers must be (tap / click: where they touch, swipe: where it starts).
+    /// nil = anywhere.
+    var region: TouchRegion? = nil
+    /// A further finger that must already rest in this region (taps and clicks only). nil = none.
+    var anchor: TouchRegion? = nil
+
+    init(fingers: Int, kind: GestureKind, region: TouchRegion? = nil, anchor: TouchRegion? = nil) {
+        self.fingers = fingers
+        self.kind = kind
+        self.region = region
+        self.anchor = anchor
+    }
+
+    /// Fingers on the trackpad while it happens, the resting one included.
+    var totalFingers: Int { fingers + (anchor == nil ? 0 : 1) }
+
+    var display: String {
+        var s = L("%lld Finger %@", fingers, kind.title)
+        if let region { s += " · " + region.title }
+        if let anchor { s += " · " + L("holding %@", anchor.title) }
+        return s
+    }
 }
 
 // MARK: - Mouse
@@ -670,6 +693,8 @@ struct GeneralSettings: Codable {
     var dragPointerSpeed: Double = 1.0      // pointer speed of the Drag action when two or more fingers move
     /// A drag started by pressing the trackpad goes on after the press is released, until the finger lifts.
     var dragHoldEnabled = false
+    /// Depth of the trackpad's corner and edge regions, as a fraction of its width.
+    var touchRegionSize: Double = TouchRegion.defaultSize
 
     init() {}
     init(from decoder: Decoder) throws {
@@ -693,6 +718,7 @@ struct GeneralSettings: Codable {
         trackpadScrollSpeed = try c.decodeIfPresent(Double.self, forKey: .trackpadScrollSpeed) ?? trackpadScrollSpeed
         dragPointerSpeed = try c.decodeIfPresent(Double.self, forKey: .dragPointerSpeed) ?? dragPointerSpeed
         dragHoldEnabled = try c.decodeIfPresent(Bool.self, forKey: .dragHoldEnabled) ?? dragHoldEnabled
+        touchRegionSize = try c.decodeIfPresent(Double.self, forKey: .touchRegionSize) ?? touchRegionSize
     }
 }
 

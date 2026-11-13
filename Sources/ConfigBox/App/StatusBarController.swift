@@ -26,7 +26,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
     }
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
+    @MainActor func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let g = store.config.general
         menu.addItem(withTitle: L("Open ConfigBox…"), action: #selector(openWindow), keyEquivalent: ",").target = self
@@ -47,6 +47,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(withTitle: L("Reload Config File"), action: #selector(reload), keyEquivalent: "").target = self
         menu.addItem(.separator())
         menu.addItem(withTitle: L("About ConfigBox"), action: #selector(showAbout), keyEquivalent: "").target = self
+        if let r = Updater.shared.available {
+            menu.addItem(withTitle: L("Update to %@…", r.version), action: #selector(openUpdates), keyEquivalent: "").target = self
+        } else {
+            menu.addItem(withTitle: L("Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "").target = self
+        }
         menu.addItem(withTitle: L("Quit ConfigBox"), action: #selector(quit), keyEquivalent: "q").target = self
     }
 
@@ -70,6 +75,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         // An accessory app is not active while its status menu is used, so the panel would open behind other windows.
         NSApp.activate(ignoringOtherApps: true)
         NSApp.orderFrontStandardAboutPanel(options: [.applicationVersion: AppVersion.short, .version: AppVersion.build ?? ""])
+    }
+    @MainActor @objc private func openUpdates() { MainWindowController.shared.show(section: .settings) }
+    @MainActor @objc private func checkForUpdates() {
+        MainWindowController.shared.show(section: .settings)
+        Updater.shared.check()
     }
     @objc private func quit() { NSApp.terminate(nil) }
 }

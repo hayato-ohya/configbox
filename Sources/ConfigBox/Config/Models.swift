@@ -695,6 +695,8 @@ struct GeneralSettings: Codable {
     var dragHoldEnabled = false
     /// Depth of the trackpad's corner and edge regions, as a fraction of its width.
     var touchRegionSize: Double = TouchRegion.defaultSize
+    /// Look for a newer release on GitHub once a day.
+    var checkForUpdates = true
 
     init() {}
     init(from decoder: Decoder) throws {
@@ -719,6 +721,7 @@ struct GeneralSettings: Codable {
         dragPointerSpeed = try c.decodeIfPresent(Double.self, forKey: .dragPointerSpeed) ?? dragPointerSpeed
         dragHoldEnabled = try c.decodeIfPresent(Bool.self, forKey: .dragHoldEnabled) ?? dragHoldEnabled
         touchRegionSize = try c.decodeIfPresent(Double.self, forKey: .touchRegionSize) ?? touchRegionSize
+        checkForUpdates = try c.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? checkForUpdates
     }
 }
 

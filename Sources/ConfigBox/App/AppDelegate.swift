@@ -115,6 +115,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SnapAreaEditSession.shared.addArea(on: NSScreen.main ?? .underMouse)
         } else if args.contains("--about") {
             statusBar.showAbout()
+        } else if args.contains("--check-updates") || args.contains("--install-update") {
+            // Scripting aid: `--check-updates` shows Settings and checks; `--install-update` also installs.
+            MainWindowController.shared.show(section: .settings)
+            let install = args.contains("--install-update")
+            MainActor.assumeIsolated { Updater.shared.check(thenInstall: install) }
         } else if let i = args.firstIndex(of: "--window"), i + 1 < args.count, let k = MainWindowController.Kind(rawValue: args[i + 1]) {
             MainWindowController.shared.show(k)
         } else if !Permissions.accessibility {
@@ -153,6 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func apply(_ cfg: Config) {
         relinkSnapAreas()
         statusBar.setVisible(cfg.general.showMenuBarIcon)
+        MainActor.assumeIsolated { Updater.shared.setAutomatic(cfg.general.checkForUpdates) }
         InputRouter.shared.apply(config: cfg)
         let tp = TrackpadEngine.shared
         tp.swipeThreshold = Float(cfg.general.swipeThreshold)

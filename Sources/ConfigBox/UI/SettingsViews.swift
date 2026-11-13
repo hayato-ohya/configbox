@@ -182,6 +182,8 @@ struct SettingsView: View {
             }
 
             Section("About") {
+                UpdateRow()
+                Toggle("Check for updates automatically", isOn: $store.config.general.checkForUpdates)
                 Text("ConfigBox combines trackpad gestures, keyboard shortcuts, key remapping and a window switcher in one dependency-free native app. The settings window is released from memory when closed; only the event tap and (if used) the multitouch listener stay resident.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -205,6 +207,74 @@ struct SettingsView: View {
             }
             Spacer()
             if !granted { Button("Grant…", action: action) }
+        }
+    }
+}
+
+/// Version, update check and one-click install, in Settings › About.
+private struct UpdateRow: View {
+    @ObservedObject private var updater = Updater.shared
+
+    var body: some View {
+        LabeledContent("Version") {
+            Text(verbatim: "\(AppVersion.short) (\(AppVersion.build ?? "?"))").textSelection(.enabled)
+        }
+        HStack(alignment: .firstTextBaseline) {
+            status
+            Spacer()
+            if updater.isBusy { ProgressView().controlSize(.small) }
+            if updater.available != nil {
+                Button("Install and Relaunch") { updater.install() }
+                    .disabled(updater.isBusy || Updater.installProblem != nil)
+            }
+            Button("Check Now") { updater.check() }.disabled(updater.isBusy)
+        }
+        if let r = updater.available {
+            if !r.notes.isEmpty {
+                DisclosureGroup("Release Notes") {
+                    ScrollView {
+                        Text(Self.markdown(r.notes)).font(.caption).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 180)
+                }
+            }
+            HStack {
+                Link("Open Release Page", destination: r.pageURL).font(.caption)
+                Spacer()
+                if let problem = Updater.installProblem {
+                    Text(verbatim: problem).font(.caption).foregroundStyle(.orange)
+                }
+            }
+        }
+    }
+
+    /// Text renders inline Markdown only, so "## Heading" lines become bold text.
+    private static func markdown(_ notes: String) -> AttributedString {
+        let text = notes.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
+            let t = line.drop { $0 == "#" }
+            return t.count < line.count ? "**\(t.trimmingCharacters(in: .whitespaces))**" : String(line)
+        }.joined(separator: "\n")
+        return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(notes)
+    }
+
+    @ViewBuilder private var status: some View {
+        switch updater.state {
+        case .idle:
+            if let d = updater.lastChecked {
+                Text("Last checked: \(d.formatted(date: .abbreviated, time: .shortened))").foregroundStyle(.secondary)
+            } else {
+                Text("Not checked yet").foregroundStyle(.secondary)
+            }
+        case .checking: Text("Checking for updates…")
+        case .upToDate: Label("ConfigBox is up to date.", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+        case .available:
+            Label(L("Version %@ is available.", updater.available?.version ?? "?"), systemImage: "arrow.down.circle.fill")
+                .foregroundStyle(.blue)
+        case .downloading: Text("Downloading…")
+        case .installing: Text("Verifying and installing…")
+        case .failed(let message):
+            Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).textSelection(.enabled)
         }
     }
 }
